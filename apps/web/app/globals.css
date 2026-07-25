@@ -1,50 +1,65 @@
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "tailwindcss";
+@source "../../../packages/ui/src/**/*.tsx";
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@theme {
+  --color-brand-primary: #8c6239;
+  --color-brand-primary-hover: #75512f;
+  --color-brand-cream: #faf7f2;
+  --color-brand-card-cream: #f4efebd9;
+  --color-brand-sage: #dde2cd;
+  --color-brand-sage-dark: #4a583d;
+  --color-brand-charcoal: #232220;
+  --color-brand-border: #e8e3da;
+
+  --font-serif: var(--font-playfair), "Playfair Display", "Didot", "Georgia", serif;
+  --font-sans: var(--font-inter), "Inter", sans-serif;
+
+  --animate-fade-in: fade-in 1s ease-out forwards;
+  --animate-fade-in-up: fade-in-up 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-subtle-zoom: subtle-zoom 20s ease-out infinite alternate;
+  --animate-scale-in: scale-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes subtle-zoom {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 }
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.imgDark {
-  display: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+/* Custom Base Styles */
+@layer base {
+  body {
+    background-color: var(--color-brand-cream);
+    color: var(--color-brand-charcoal);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
   }
 
-  .imgLight {
-    display: none;
-  }
-  .imgDark {
-    display: unset;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    font-weight: 400;
   }
 }
