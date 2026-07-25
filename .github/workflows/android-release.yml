@@ -1,0 +1,44 @@
+name: Android Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/android/**'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x apps/android/gradlew
+
+      - name: Build Debug APK
+        run: |
+          cd apps/android
+          ./gradlew assembleDebug
+
+      - name: Create Release and Upload Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-release-b${{ github.run_number }}
+          name: Android Release Build ${{ github.run_number }}
+          body: |
+            Automated Release of the Android Application.
+            Triggered by a merge / push to the main branch.
+          files: apps/android/app/build/outputs/apk/debug/app-debug.apk
+          token: ${{ secrets.GITHUB_TOKEN }}
