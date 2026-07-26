@@ -79,7 +79,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
 
     object Tips : Screen("tips", "Wellness Tips", Icons.Default.Favorite)
 
-    object Profile : Screen("profile", "Loyalty", Icons.Default.AccountCircle)
+    object Profile : Screen("profile", "Profile", Icons.Default.AccountCircle)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -144,7 +144,6 @@ fun MainAppScreen() {
                     listOf(
                         Screen.Catalog,
                         Screen.Shop,
-                        Screen.Booking,
                         Screen.Tips,
                         Screen.Profile,
                     )
