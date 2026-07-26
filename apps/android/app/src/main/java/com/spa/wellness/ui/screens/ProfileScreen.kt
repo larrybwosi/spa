@@ -1,5 +1,7 @@
 package com.spa.wellness.ui.screens
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,12 +21,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,25 +42,32 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spa.wellness.Booking
+import com.spa.wellness.data.NetworkClient
+import com.spa.wellness.data.SessionManager
 import com.spa.wellness.ui.theme.Charcoal
 import com.spa.wellness.ui.theme.DarkSage
 import com.spa.wellness.ui.theme.GoldenLeaf
 import com.spa.wellness.ui.theme.SageGreen
 import com.spa.wellness.ui.theme.SoftCream
+import kotlinx.coroutines.launch
 
 data class BookingReminder(
     val id: String = java.util.UUID.randomUUID().toString(),
@@ -70,12 +82,30 @@ fun ProfileScreen(
     bookings: List<Booking>,
     onCancelBooking: (Booking) -> Unit,
 ) {
-    // 1. App Customization State Variables
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // Auth track state
+    var loggedInUser by remember { mutableStateOf(SessionManager.currentUser) }
+    var isLoginMode by remember { mutableStateOf(true) }
+
+    // Input States
+    var emailInput by remember { mutableStateOf("") }
+    var passwordInput by remember { mutableStateOf("") }
+    var nameInput by remember { mutableStateOf("") }
+    var authErrorMsg by remember { mutableStateOf("") }
+    var isAuthenticating by remember { mutableStateOf(false) }
+
+    // Real API Bookings States
+    val apiBookings = remember { mutableStateListOf<Booking>() }
+    var isLoadingBookings by remember { mutableStateOf(false) }
+
+    // App Customization State Variables
     var pushNotificationsEnabled by remember { mutableStateOf(true) }
     var backgroundSoundsEnabled by remember { mutableStateOf(false) }
     var selectedTheme by remember { mutableStateOf("Sage Green") }
 
-    // 2. Scheduled Reminders State List
+    // Scheduled Reminders State List
     val scheduledReminders =
         remember {
             mutableStateListOf(
@@ -94,15 +124,262 @@ fun ProfileScreen(
             )
         }
 
-    // 3. Reminder Scheduling Form State Variables
+    // Reminder Scheduling Form State Variables
     var reminderServiceName by remember { mutableStateOf("") }
     var reminderDateString by remember { mutableStateOf("") }
     var reminderInterval by remember { mutableStateOf("Monthly") }
     var reminderCustomNote by remember { mutableStateOf("") }
     var formError by remember { mutableStateOf("") }
 
+    // Fetch real bookings if logged in
+    val fetchRealBookings =
+        suspend {
+            if (SessionManager.currentToken != null) {
+                isLoadingBookings = true
+                try {
+                    val jsonArray = NetworkClient.getBookings()
+                    apiBookings.clear()
+                    for (i in 0 until jsonArray.length()) {
+                        val obj = jsonArray.getJSONObject(i)
+                        val serviceObj = obj.optJSONObject("service")
+                        val serviceName = serviceObj?.optString("name") ?: "Premium Service"
+                        val rawDateTime = obj.optString("dateTime", "")
+
+                        // Format dateTime simply
+                        val date = if (rawDateTime.length >= 10) rawDateTime.substring(0, 10) else "2026-08-01"
+                        val time = if (rawDateTime.length >= 16) rawDateTime.substring(11, 16) else "10:00 AM"
+
+                        val statusStr = obj.optString("status", "PENDING")
+                        val mappedStatus = if (statusStr == "CANCELLED") "Cancelled" else "Confirmed"
+
+                        apiBookings.add(
+                            Booking(
+                                id = obj.optString("id"),
+                                serviceName = serviceName,
+                                date = date,
+                                timeSlot = time,
+                                customerName = loggedInUser?.name ?: "Valued Member",
+                                notes = "Booked via Android App",
+                                pointsEarned = 50,
+                                status = mappedStatus,
+                            ),
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.e("ProfileScreen", "Failed to fetch bookings", e)
+                } finally {
+                    isLoadingBookings = false
+                }
+            }
+        }
+
+    LaunchedEffect(loggedInUser) {
+        if (loggedInUser != null) {
+            fetchRealBookings()
+        }
+    }
+
+    val displayBookings = if (loggedInUser != null) apiBookings else bookings
+
+    // If user is unauthenticated, show a beautiful, fully interactive Login/Register card
+    if (loggedInUser == null) {
+        LazyColumn(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            item {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = SoftCream),
+                    elevation = CardDefaults.cardElevation(8.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                ) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(SoftCream, SageGreen.copy(alpha = 0.1f)),
+                                    ),
+                                )
+                                .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = DarkSage,
+                            modifier =
+                                Modifier
+                                    .size(48.dp)
+                                    .padding(bottom = 8.dp),
+                        )
+
+                        Text(
+                            text = if (isLoginMode) "Welcome Back" else "Create Account",
+                            style =
+                                MaterialTheme.typography.headlineSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Charcoal,
+                                ),
+                            textAlign = TextAlign.Center,
+                        )
+
+                        Text(
+                            text =
+                                if (isLoginMode) {
+                                    "Sign in to manage bookings, track loyalty points, and explore exclusive experiences."
+                                } else {
+                                    "Join Aura Wellness Club to book personalized rituals and earn points."
+                                },
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+                        )
+
+                        if (authErrorMsg.isNotEmpty()) {
+                            Text(
+                                text = authErrorMsg,
+                                color = Color.Red,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                            )
+                        }
+
+                        if (!isLoginMode) {
+                            OutlinedTextField(
+                                value = nameInput,
+                                onValueChange = { nameInput = it },
+                                label = { Text("Full Name") },
+                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = DarkSage) },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors =
+                                    OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = DarkSage,
+                                        focusedLabelColor = DarkSage,
+                                    ),
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+
+                        OutlinedTextField(
+                            value = emailInput,
+                            onValueChange = { emailInput = it },
+                            label = { Text("Email Address") },
+                            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = DarkSage) },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors =
+                                OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = DarkSage,
+                                    focusedLabelColor = DarkSage,
+                                ),
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedTextField(
+                            value = passwordInput,
+                            onValueChange = { passwordInput = it },
+                            label = { Text("Password") },
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = DarkSage) },
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors =
+                                OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = DarkSage,
+                                    focusedLabelColor = DarkSage,
+                                ),
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        if (isAuthenticating) {
+                            CircularProgressIndicator(color = DarkSage, modifier = Modifier.size(24.dp))
+                        } else {
+                            Button(
+                                onClick = {
+                                    if (emailInput.isBlank() || passwordInput.isBlank() || (!isLoginMode && nameInput.isBlank())) {
+                                        authErrorMsg = "Please fill in all fields."
+                                        return@Button
+                                    }
+                                    isAuthenticating = true
+                                    authErrorMsg = ""
+                                    coroutineScope.launch {
+                                        try {
+                                            if (isLoginMode) {
+                                                val res = NetworkClient.signIn(emailInput.trim(), passwordInput)
+                                                val userObj = res.getJSONObject("user")
+                                                val token = res.getString("token")
+                                                SessionManager.saveSession(
+                                                    context,
+                                                    id = userObj.getString("id"),
+                                                    name = userObj.getString("name"),
+                                                    email = userObj.getString("email"),
+                                                    role = userObj.optString("role", "CLIENT"),
+                                                    token = token,
+                                                )
+                                                loggedInUser = SessionManager.currentUser
+                                                Toast.makeText(context, "Welcome back, ${userObj.getString("name")}!", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                NetworkClient.signUp(nameInput.trim(), emailInput.trim(), passwordInput)
+                                                isLoginMode = true
+                                                authErrorMsg = ""
+                                                passwordInput = ""
+                                                Toast.makeText(context, "Registration successful! Please sign in.", Toast.LENGTH_LONG).show()
+                                            }
+                                        } catch (e: Exception) {
+                                            authErrorMsg = e.message ?: "Authentication failed."
+                                        } finally {
+                                            isAuthenticating = false
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = SageGreen),
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                            ) {
+                                Text(
+                                    text = if (isLoginMode) "Sign In" else "Sign Up",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            Text(
+                                text = if (isLoginMode) "Don't have an account? Sign Up" else "Already have an account? Sign In",
+                                color = DarkSage,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                modifier =
+                                    Modifier
+                                        .clickable {
+                                            isLoginMode = !isLoginMode
+                                            authErrorMsg = ""
+                                        }
+                                        .padding(8.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        return
+    }
+
     // Loyalty logic: total points is active booking count * 50
-    val activeBookings = bookings.filter { it.status == "Confirmed" }
+    val activeBookings = displayBookings.filter { it.status == "Confirmed" }
     val totalPoints = activeBookings.sumOf { it.pointsEarned }
     val memberTier =
         when {
@@ -111,7 +388,6 @@ fun ProfileScreen(
             else -> "Silver Sage"
         }
 
-    // Single LazyColumn containing all sections so that the entire Profile screen is scrollable
     LazyColumn(
         modifier =
             Modifier
@@ -153,7 +429,7 @@ fun ProfileScreen(
                                     ),
                             )
                             Text(
-                                text = "Valued Member",
+                                text = loggedInUser?.name ?: "Valued Member",
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Charcoal),
                             )
                         }
@@ -200,7 +476,6 @@ fun ProfileScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Points status visual guide
                     Text(
                         text = "Earn 50 loyalty points with every premium treatment booked. Redeem 300 points for a free massage!",
                         fontSize = 11.sp,
@@ -547,7 +822,13 @@ fun ProfileScreen(
             )
         }
 
-        if (bookings.isEmpty()) {
+        if (isLoadingBookings) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = DarkSage)
+                }
+            }
+        } else if (displayBookings.isEmpty()) {
             item {
                 Box(
                     modifier =
@@ -564,11 +845,47 @@ fun ProfileScreen(
                 }
             }
         } else {
-            items(bookings) { booking ->
+            items(displayBookings) { booking ->
                 BookingHistoryCard(
                     booking = booking,
-                    onCancelClick = { onCancelBooking(booking) },
+                    onCancelClick = {
+                        coroutineScope.launch {
+                            try {
+                                if (booking.id.isNotBlank() && booking.id != "mock_id") {
+                                    NetworkClient.cancelBooking(booking.id)
+                                    fetchRealBookings()
+                                    Toast.makeText(context, "Booking successfully cancelled!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    onCancelBooking(booking)
+                                }
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    },
                 )
+            }
+        }
+
+        // --- SECTION 6: Sign Out Button ---
+        item {
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        NetworkClient.signOut()
+                        SessionManager.clearSession(context)
+                        loggedInUser = null
+                        Toast.makeText(context, "Successfully signed out.", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.8f)),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                shape = RoundedCornerShape(8.dp),
+            ) {
+                Text(text = "Sign Out", color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
     }

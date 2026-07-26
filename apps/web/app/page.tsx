@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { Card } from "@repo/ui/card";
@@ -63,6 +63,41 @@ export default function Home() {
   const [bookingDate, setBookingDate] = useState("");
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
 
+  // Authentication & API Integration states
+  const [user, setUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [authName, setAuthName] = useState("");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [services, setServices] = useState<any[]>([]);
+
+  // Fetch session on load
+  useEffect(() => {
+    fetch("http://localhost:3001/api/auth/session", { credentials: "include" })
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error("No session");
+      })
+      .then((data) => {
+        setUser(data.user);
+        if (data.user) {
+          setBookingName(data.user.name);
+        }
+      })
+      .catch(() => setUser(null));
+
+    // Fetch services
+    fetch("http://localhost:3001/api/services")
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error("Failed to fetch");
+      })
+      .then((data) => setServices(data))
+      .catch((e) => console.error("Could not fetch services, using fallback.", e));
+  }, []);
+
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email) {
@@ -73,16 +108,102 @@ export default function Home() {
     }
   };
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (bookingName && bookingDate) {
+    setAuthError("");
+    const url = authMode === "login"
+      ? "http://localhost:3001/api/auth/signin"
+      : "http://localhost:3001/api/auth/signup";
+
+    const payload = authMode === "login"
+      ? { email: authEmail, password: authPassword }
+      : { name: authName, email: authEmail, password: authPassword, role: "CLIENT" };
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Authentication failed");
+      }
+
+      const data = await res.json();
+
+      if (authMode === "login") {
+        setUser(data.user);
+        setBookingName(data.user.name);
+        setIsAuthModalOpen(false);
+        setAuthEmail("");
+        setAuthPassword("");
+      } else {
+        setAuthMode("login");
+        setAuthPassword("");
+        alert("Registration successful! Please sign in with your credentials.");
+      }
+    } catch (err: any) {
+      setAuthError(err.message || "An error occurred");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:3001/api/auth/signout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (e) {
+      console.error(e);
+    }
+    setUser(null);
+  };
+
+  const handleBookingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      setIsBookingOpen(false);
+      setAuthMode("login");
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    let targetServiceId = bookingService;
+    if (!targetServiceId.startsWith("s")) {
+      if (bookingService === "Therapeutic Massage") targetServiceId = "s1";
+      else if (bookingService === "Rejuvenating Facial") targetServiceId = "s4";
+      else if (bookingService === "Wellness Consultation") targetServiceId = "s3";
+      else targetServiceId = "s1";
+    }
+
+    try {
+      const res = await fetch("http://localhost:3001/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serviceId: targetServiceId,
+          staffId: "staff1", // Default Elena Rostova
+          dateTime: new Date(bookingDate).toISOString(),
+        }),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to submit booking");
+      }
+
       setBookingSubmitted(true);
       setTimeout(() => {
         setBookingSubmitted(false);
         setIsBookingOpen(false);
-        setBookingName("");
         setBookingDate("");
       }, 3000);
+    } catch (err: any) {
+      alert(err.message || "An error occurred while booking");
     }
   };
 
@@ -124,8 +245,32 @@ export default function Home() {
             </a>
           </nav>
 
-          {/* Book Now CTA */}
-          <div className="hidden md:block">
+          {/* Book Now CTA / Auth */}
+          <div className="hidden md:flex items-center gap-6">
+            {user ? (
+              <div className="flex items-center gap-3 border-r pr-6 border-brand-border">
+                <span className="text-xs uppercase tracking-widest font-serif text-brand-charcoal font-medium">
+                  Hello, {user.name}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="text-[10px] uppercase tracking-widest text-red-500 hover:text-red-700 transition-colors font-sans font-semibold cursor-pointer"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setAuthMode("login");
+                  setIsAuthModalOpen(true);
+                }}
+                className="text-xs uppercase tracking-widest font-sans font-semibold hover:text-brand-primary transition-colors text-brand-charcoal/80 cursor-pointer"
+              >
+                Sign In
+              </button>
+            )}
+
             <Button
               onClick={() => setIsBookingOpen(true)}
               variant="default"
@@ -188,6 +333,35 @@ export default function Home() {
           >
             Contact
           </a>
+
+          {user ? (
+            <div className="py-4 border-b border-brand-border flex items-center justify-between">
+              <span className="text-sm font-sans font-medium text-brand-charcoal">
+                Hello, {user.name}
+              </span>
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleLogout();
+                }}
+                className="text-xs uppercase tracking-widest text-red-500 font-bold"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                setAuthMode("login");
+                setIsAuthModalOpen(true);
+              }}
+              className="hover:text-brand-primary text-left font-serif transition-colors py-4 border-b border-brand-border text-xl"
+            >
+              Sign In
+            </button>
+          )}
+
           <div className="pt-8">
             <Button
               onClick={() => {
@@ -674,9 +848,19 @@ export default function Home() {
                       onChange={(e) => setBookingService(e.target.value)}
                       className="flex h-11 w-full rounded-full border border-brand-border bg-white px-4 py-2 text-sm text-brand-charcoal focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-primary"
                     >
-                      <option value="Therapeutic Massage">Therapeutic Massage</option>
-                      <option value="Rejuvenating Facial">Rejuvenating Facial</option>
-                      <option value="Wellness Consultation">Wellness Consultation</option>
+                      {services.length > 0 ? (
+                        services.map((svc) => (
+                          <option key={svc.id} value={svc.id}>
+                            {svc.name} (${svc.price})
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="Therapeutic Massage">Therapeutic Massage</option>
+                          <option value="Rejuvenating Facial">Rejuvenating Facial</option>
+                          <option value="Wellness Consultation">Wellness Consultation</option>
+                        </>
+                      )}
                     </select>
                   </div>
 
@@ -704,6 +888,106 @@ export default function Home() {
                 </Button>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* AUTH MODAL (LOGIN/REGISTER) */}
+      {isAuthModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
+          <div className="bg-brand-cream border border-brand-border w-full max-w-md rounded-3xl p-6 md:p-8 shadow-2xl relative animate-scale-in animate-duration-300">
+            <button
+              onClick={() => setIsAuthModalOpen(false)}
+              className="absolute top-4 right-4 p-2 text-brand-charcoal/60 hover:text-brand-charcoal hover:bg-brand-card-cream/40 rounded-full transition-all cursor-pointer"
+              aria-label="Close modal"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <form onSubmit={handleAuthSubmit} className="space-y-5">
+              <div className="text-center pb-2">
+                <span className="text-[10px] tracking-widest text-brand-primary font-bold uppercase block mb-1">
+                  {authMode === "login" ? "WELCOME BACK" : "JOIN THE CLUB"}
+                </span>
+                <h3 className="font-serif text-2xl text-brand-charcoal">
+                  {authMode === "login" ? "Sign In" : "Create Account"}
+                </h3>
+              </div>
+
+              {authError && (
+                <div className="text-red-600 bg-red-50 border border-red-200 text-xs rounded-xl p-3 text-center">
+                  {authError}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {authMode === "register" && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] tracking-wider uppercase font-semibold text-brand-charcoal/60 font-sans">
+                      Full Name
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="e.g. Eleanor Vance"
+                      required
+                      value={authName}
+                      onChange={(e) => setAuthName(e.target.value)}
+                      className="bg-white border-brand-border"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] tracking-wider uppercase font-semibold text-brand-charcoal/60 font-sans">
+                    Email Address
+                  </label>
+                  <Input
+                    type="email"
+                    placeholder="e.g. eleanor@aura.com"
+                    required
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    className="bg-white border-brand-border"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] tracking-wider uppercase font-semibold text-brand-charcoal/60 font-sans">
+                    Password
+                  </label>
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    required
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    className="bg-white border-brand-border"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full text-xs uppercase tracking-widest bg-brand-primary text-white py-4 mt-2"
+              >
+                {authMode === "login" ? "Sign In" : "Sign Up"}
+              </Button>
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode(authMode === "login" ? "register" : "login");
+                    setAuthError("");
+                  }}
+                  className="text-xs text-brand-primary hover:underline font-sans font-medium cursor-pointer"
+                >
+                  {authMode === "login"
+                    ? "Don't have an account? Sign Up"
+                    : "Already have an account? Sign In"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

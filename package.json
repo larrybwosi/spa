@@ -15,5 +15,14 @@
     },
     "engines": {
         "node": ">=18"
+    },
+    "pnpm": {
+        "onlyBuiltDependencies": [
+            "@prisma/engines",
+            "bcrypt",
+            "prisma",
+            "sharp",
+            "unrs-resolver"
+        ]
     }
 }

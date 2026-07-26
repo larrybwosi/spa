@@ -1,5 +1,6 @@
 package com.spa.wellness.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -26,19 +28,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spa.wellness.Booking
 import com.spa.wellness.SpaService
+import com.spa.wellness.data.NetworkClient
+import com.spa.wellness.data.SessionManager
 import com.spa.wellness.ui.theme.Charcoal
 import com.spa.wellness.ui.theme.DarkSage
 import com.spa.wellness.ui.theme.SageGreen
 import com.spa.wellness.ui.theme.SoftCream
+import kotlinx.coroutines.launch
 
 @Composable
 fun BookingScreen(
@@ -46,13 +53,23 @@ fun BookingScreen(
     onClearPreselectedService: () -> Unit,
     onBookingConfirmed: (Booking) -> Unit,
 ) {
-    var customerName by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val activeUser = SessionManager.currentUser
+    var customerName by remember { mutableStateOf(activeUser?.name ?: "") }
+
+    if (activeUser != null && customerName.isEmpty()) {
+        customerName = activeUser.name
+    }
+
     var serviceInput by remember { mutableStateOf(preselectedService?.name ?: "Swedish Massage") }
     var bookingDate by remember { mutableStateOf("2026-08-02") }
     var bookingTime by remember { mutableStateOf("11:00 AM") }
     var notes by remember { mutableStateOf("") }
 
     var errorMessage by remember { mutableStateOf("") }
+    var isSubmitting by remember { mutableStateOf(false) }
 
     Column(
         modifier =
@@ -76,6 +93,32 @@ fun BookingScreen(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        // Show Auth warning if not logged in
+        if (activeUser == null) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.05f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red.copy(alpha = 0.3f)),
+                shape = RoundedCornerShape(12.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Authentication Required",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color.Red),
+                    )
+                    Text(
+                        text = "Please navigate to the 'Profile' tab to sign in or create an account before completing a reservation.",
+                        fontSize = 13.sp,
+                        color = Charcoal,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
+        }
 
         if (preselectedService != null) {
             Card(
@@ -129,7 +172,6 @@ fun BookingScreen(
                         .verticalScroll(rememberScrollState(), enabled = false),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                // To keep it simple, choose from some service options
                 listOf("Swedish Massage", "Deep Tissue", "Radiant Glow", "Himalayan Sauna").forEach { opt ->
                     Box(
                         modifier =
@@ -160,6 +202,7 @@ fun BookingScreen(
             value = customerName,
             onValueChange = { customerName = it },
             placeholder = { Text("Jane Doe") },
+            enabled = activeUser != null,
             colors =
                 OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = SoftCream,
@@ -244,35 +287,77 @@ fun BookingScreen(
             )
         }
 
-        Button(
-            onClick = {
-                if (customerName.isBlank()) {
-                    errorMessage = "Please enter your name to complete booking."
-                } else {
+        if (isSubmitting) {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = DarkSage)
+            }
+        } else {
+            Button(
+                onClick = {
+                    if (activeUser == null) {
+                        errorMessage = "Please sign in on the 'Profile' tab first."
+                        return@Button
+                    }
+                    if (customerName.isBlank()) {
+                        errorMessage = "Please enter your name to complete booking."
+                        return@Button
+                    }
+
+                    isSubmitting = true
                     errorMessage = ""
-                    val finalService = preselectedService?.name ?: serviceInput
-                    onBookingConfirmed(
-                        Booking(
-                            serviceName = finalService,
-                            date = bookingDate,
-                            timeSlot = bookingTime,
-                            customerName = customerName,
-                            notes = notes,
-                        ),
-                    )
-                    onClearPreselectedService()
-                    customerName = ""
-                    notes = ""
-                }
-            },
-            colors = ButtonDefaults.buttonColors(containerColor = SageGreen),
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-            shape = RoundedCornerShape(8.dp),
-        ) {
-            Text("Complete My Reservation", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+
+                    // Map local selections to correct Service ID
+                    val serviceId =
+                        preselectedService?.id ?: when {
+                            serviceInput.contains("swedish", ignoreCase = true) -> "s1"
+                            serviceInput.contains("deep", ignoreCase = true) -> "s2"
+                            serviceInput.contains("glow", ignoreCase = true) -> "s4"
+                            serviceInput.contains("himalayan", ignoreCase = true) -> "s7"
+                            else -> "s1"
+                        }
+
+                    coroutineScope.launch {
+                        try {
+                            val isoDateTime = "${bookingDate}T${if (bookingTime.contains("PM") && !bookingTime.startsWith("12")) "22" else "10"}:00:00.000Z"
+                            NetworkClient.createBooking(serviceId, "staff1", isoDateTime)
+                            Toast.makeText(context, "Reservation Confirmed!", Toast.LENGTH_SHORT).show()
+                            onBookingConfirmed(
+                                Booking(
+                                    serviceName = preselectedService?.name ?: serviceInput,
+                                    date = bookingDate,
+                                    timeSlot = bookingTime,
+                                    customerName = customerName,
+                                    notes = notes,
+                                    status = "Confirmed",
+                                ),
+                            )
+                            onClearPreselectedService()
+                            customerName = ""
+                            notes = ""
+                        } catch (e: Exception) {
+                            errorMessage = e.message ?: "Failed to save booking in cloud."
+                        } finally {
+                            isSubmitting = false
+                        }
+                    }
+                },
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = if (activeUser != null) SageGreen else Color.Gray,
+                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                shape = RoundedCornerShape(8.dp),
+            ) {
+                Text(
+                    text = if (activeUser != null) "Complete My Reservation" else "Sign In to Complete Reservation",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                )
+            }
         }
     }
 }
