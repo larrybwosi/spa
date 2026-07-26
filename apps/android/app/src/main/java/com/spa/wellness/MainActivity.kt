@@ -62,6 +62,7 @@ import com.spa.wellness.ui.theme.WarmSand
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.spa.wellness.data.SessionManager.init(applicationContext)
         setContent {
             SpaWellnessTheme {
                 MainAppScreen()
