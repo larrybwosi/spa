@@ -5,7 +5,7 @@ import { X, Plus } from 'lucide-react';
 import { Badge } from './badge';
 import { Button } from './button';
 import { Input } from './input';
-import { cn } from '../../lib/utils';
+import { cn } from './utils';
 
 interface TagInputProps {
   placeholder?: string;

@@ -1,0 +1,20 @@
+
+> web@0.1.0 dev /app/apps/web
+> next dev --port 3000
+
+▲ Next.js 16.2.0 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+✓ Ready in 612ms
+
+○ Compiling / ...
+ GET / 200 in 7.2s (next.js: 6.4s, application-code: 738ms)
+[browser] Could not fetch services, using fallback. TypeError: Failed to fetch
+    at Home.useEffect (app/page.tsx:106:5)
+  104 |
+  105 |     // Fetch services
+> 106 |     fetch("http://localhost:3001/api/services")
+      |     ^
+  107 |       .then((res) => {
+  108 |         if (res.ok) return res.json();
+  109 |         throw new Error("Failed to fetch"); (app/page.tsx:112:29)
