@@ -12,7 +12,7 @@ import {
   X,
   Sparkles,
   Compass,
-  CheckCircle
+  CheckCircle,
 } from "lucide-react";
 
 // Standard Inline SVG Social Icons for maximum reliability
@@ -64,7 +64,12 @@ export default function Home() {
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
 
   // Authentication & API Integration states
-  const [user, setUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
+  const [user, setUser] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  } | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [authName, setAuthName] = useState("");
@@ -95,7 +100,9 @@ export default function Home() {
         throw new Error("Failed to fetch");
       })
       .then((data) => setServices(data))
-      .catch((e) => console.error("Could not fetch services, using fallback.", e));
+      .catch((e) =>
+        console.error("Could not fetch services, using fallback.", e),
+      );
   }, []);
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
@@ -111,13 +118,20 @@ export default function Home() {
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
-    const url = authMode === "login"
-      ? "http://localhost:3001/api/auth/signin"
-      : "http://localhost:3001/api/auth/signup";
+    const url =
+      authMode === "login"
+        ? "http://localhost:3001/api/auth/signin"
+        : "http://localhost:3001/api/auth/signup";
 
-    const payload = authMode === "login"
-      ? { email: authEmail, password: authPassword }
-      : { name: authName, email: authEmail, password: authPassword, role: "CLIENT" };
+    const payload =
+      authMode === "login"
+        ? { email: authEmail, password: authPassword }
+        : {
+            name: authName,
+            email: authEmail,
+            password: authPassword,
+            role: "CLIENT",
+          };
 
     try {
       const res = await fetch(url, {
@@ -175,7 +189,8 @@ export default function Home() {
     if (!targetServiceId.startsWith("s")) {
       if (bookingService === "Therapeutic Massage") targetServiceId = "s1";
       else if (bookingService === "Rejuvenating Facial") targetServiceId = "s4";
-      else if (bookingService === "Wellness Consultation") targetServiceId = "s3";
+      else if (bookingService === "Wellness Consultation")
+        targetServiceId = "s3";
       else targetServiceId = "s1";
     }
 
@@ -209,11 +224,9 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen bg-brand-cream text-brand-charcoal overflow-x-hidden font-sans selection:bg-brand-primary/20">
-
       {/* HEADER / NAVIGATION */}
       <header className="sticky top-0 z-40 bg-brand-cream/80 backdrop-blur-md border-b border-brand-border">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-
           {/* Logo */}
           <a href="#" className="flex items-center gap-2 group">
             <span className="font-serif text-xl md:text-2xl tracking-widest text-brand-primary group-hover:opacity-80 transition-opacity">
@@ -223,23 +236,38 @@ export default function Home() {
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center space-x-10 text-sm tracking-widest font-medium uppercase text-brand-charcoal/80">
-            <a href="#about" className="hover:text-brand-primary transition-colors py-2 relative group">
+            <a
+              href="#about"
+              className="hover:text-brand-primary transition-colors py-2 relative group"
+            >
               About
               <span className="absolute bottom-0 left-0 w-full h-[1px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
             </a>
-            <a href="#services" className="hover:text-brand-primary transition-colors py-2 relative group">
+            <a
+              href="#services"
+              className="hover:text-brand-primary transition-colors py-2 relative group"
+            >
               Services
               <span className="absolute bottom-0 left-0 w-full h-[1px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
             </a>
-            <a href="#packages" className="hover:text-brand-primary transition-colors py-2 relative group">
+            <a
+              href="#packages"
+              className="hover:text-brand-primary transition-colors py-2 relative group"
+            >
               Packages
               <span className="absolute bottom-0 left-0 w-full h-[1px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
             </a>
-            <a href="#news" className="hover:text-brand-primary transition-colors py-2 relative group">
+            <a
+              href="#news"
+              className="hover:text-brand-primary transition-colors py-2 relative group"
+            >
               News
               <span className="absolute bottom-0 left-0 w-full h-[1px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
             </a>
-            <a href="#contact" className="hover:text-brand-primary transition-colors py-2 relative group">
+            <a
+              href="#contact"
+              className="hover:text-brand-primary transition-colors py-2 relative group"
+            >
               Contact
               <span className="absolute bottom-0 left-0 w-full h-[1px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
             </a>
@@ -286,7 +314,11 @@ export default function Home() {
             className="md:hidden p-2 text-brand-charcoal hover:text-brand-primary transition-colors"
             aria-label="Toggle menu"
           >
-            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
           </button>
         </div>
       </header>
@@ -378,7 +410,6 @@ export default function Home() {
 
       {/* HERO SECTION */}
       <section className="relative min-h-[90vh] md:min-h-screen flex items-center justify-center pt-20 pb-24 md:py-0 px-6 overflow-hidden">
-
         {/* Background Image Container */}
         <div className="absolute inset-0 z-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -411,7 +442,9 @@ export default function Home() {
           </div>
 
           <p className="text-sm md:text-lg text-brand-cream/90 max-w-xl mx-auto font-sans font-light leading-relaxed mb-10 tracking-wide">
-            Step into a sanctuary of peace. Our bespoke wellness rituals are designed to harmonize your body, mind, and spirit in an atmosphere of quiet luxury.
+            Step into a sanctuary of peace. Our bespoke wellness rituals are
+            designed to harmonize your body, mind, and spirit in an atmosphere
+            of quiet luxury.
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
@@ -435,13 +468,13 @@ export default function Home() {
             Curated Treatments
           </h2>
           <p className="text-sm md:text-base text-brand-charcoal/70 leading-relaxed font-sans font-light">
-            Discover our range of holistic therapies, each tailored to elevate your well-being.
+            Discover our range of holistic therapies, each tailored to elevate
+            your well-being.
           </p>
         </div>
 
         {/* Dynamic Card Grid matching the screenshot */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-
           {/* Card 1: Massage image (Top-Left) */}
           <div className="group relative rounded-3xl overflow-hidden min-h-[350px] md:min-h-[420px] shadow-sm flex flex-col justify-end p-8 transition-transform duration-500 hover:scale-[1.01]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -460,7 +493,8 @@ export default function Home() {
                 Therapeutic Massage
               </h3>
               <p className="text-xs md:text-sm text-brand-cream/80 font-sans font-light leading-relaxed mb-4">
-                Release tension and restore balance with our customized deep tissue and Swedish techniques.
+                Release tension and restore balance with our customized deep
+                tissue and Swedish techniques.
               </p>
             </div>
 
@@ -487,7 +521,8 @@ export default function Home() {
                   Rejuvenating Facial
                 </h3>
                 <p className="text-xs md:text-sm text-brand-charcoal/70 leading-relaxed font-sans font-light max-w-sm">
-                  Organic, nutrient-rich botanicals applied with expert precision to unveil your natural radiance.
+                  Organic, nutrient-rich botanicals applied with expert
+                  precision to unveil your natural radiance.
                 </p>
               </div>
             </div>
@@ -517,7 +552,8 @@ export default function Home() {
                   Wellness Consultation
                 </h3>
                 <p className="text-xs md:text-sm text-brand-sage-dark/80 leading-relaxed font-sans font-light max-w-sm">
-                  A holistic assessment guiding you towards optimal lifestyle harmony.
+                  A holistic assessment guiding you towards optimal lifestyle
+                  harmony.
                 </p>
               </div>
             </div>
@@ -551,14 +587,15 @@ export default function Home() {
               Aura Skin
             </div>
           </div>
-
         </div>
       </section>
 
       {/* OUR PHILOSOPHY SECTION */}
-      <section id="about" className="py-24 md:py-32 bg-brand-card-cream/50 border-y border-brand-border px-6">
+      <section
+        id="about"
+        className="py-24 md:py-32 bg-brand-card-cream/50 border-y border-brand-border px-6"
+      >
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
-
           {/* Left Column: Elegant Vertical Image */}
           <div className="lg:col-span-5 relative aspect-3/4 rounded-3xl overflow-hidden shadow-sm h-[500px] lg:h-[600px] w-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -583,10 +620,15 @@ export default function Home() {
 
             <div className="space-y-6 text-sm md:text-base text-brand-charcoal/70 font-sans font-light leading-relaxed max-w-xl">
               <p>
-                At Aura Wellness, we believe that true beauty stems from profound inner peace. Our spaces are meticulously crafted to filter out the noise of the modern world, providing a sanctuary where silence is celebrated and rejuvenation is an art form.
+                At Aura Wellness, we believe that true beauty stems from
+                profound inner peace. Our spaces are meticulously crafted to
+                filter out the noise of the modern world, providing a sanctuary
+                where silence is celebrated and rejuvenation is an art form.
               </p>
               <p>
-                We source only the finest organic ingredients and employ practitioners who are masters of their craft, ensuring every touch is intentional and every moment is transformative.
+                We source only the finest organic ingredients and employ
+                practitioners who are masters of their craft, ensuring every
+                touch is intentional and every moment is transformative.
               </p>
             </div>
 
@@ -610,14 +652,12 @@ export default function Home() {
               </div>
             </div>
           </div>
-
         </div>
       </section>
 
       {/* LOCATION & SANCTUARY SECTION */}
       <section id="contact" className="py-24 md:py-32 px-6 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
-
           {/* Left Column: Location Details */}
           <div className="lg:col-span-5 space-y-8 order-2 lg:order-1">
             <div className="space-y-4">
@@ -628,7 +668,8 @@ export default function Home() {
                 Visit Our Sanctuary
               </h2>
               <p className="text-sm md:text-base text-brand-charcoal/70 font-sans font-light leading-relaxed">
-                Find us in the heart of the Wellness District, where your journey to tranquility begins.
+                Find us in the heart of the Wellness District, where your
+                journey to tranquility begins.
               </p>
             </div>
 
@@ -638,7 +679,9 @@ export default function Home() {
                 <MapPin className="h-5 w-5" />
               </div>
               <div className="space-y-1">
-                <h4 className="font-serif text-base text-brand-charcoal font-medium">Aura Wellness Center</h4>
+                <h4 className="font-serif text-base text-brand-charcoal font-medium">
+                  Aura Wellness Center
+                </h4>
                 <p className="text-xs md:text-sm text-brand-charcoal/70 font-sans font-light">
                   123 Serene Lane, Wellness District, 90210
                 </p>
@@ -667,23 +710,21 @@ export default function Home() {
             />
             <div className="absolute inset-0 bg-black/10"></div>
           </div>
-
         </div>
       </section>
 
       {/* FOOTER */}
       <footer className="bg-brand-card-cream/60 border-t border-brand-border pt-16 md:pt-24 pb-12 px-6">
         <div className="max-w-7xl mx-auto">
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-16 mb-16 md:mb-20">
-
             {/* Brand column */}
             <div className="lg:col-span-4 space-y-6">
               <span className="font-serif text-xl tracking-widest text-brand-primary block">
                 AURA WELLNESS
               </span>
               <p className="text-xs md:text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed max-w-xs">
-                Elevating your state of being through mindful practices and luxurious care.
+                Elevating your state of being through mindful practices and
+                luxurious care.
               </p>
               {/* Social icons */}
               <div className="flex items-center gap-3">
@@ -711,16 +752,36 @@ export default function Home() {
               </h4>
               <ul className="space-y-2.5 text-xs md:text-sm font-sans text-brand-charcoal/70">
                 <li>
-                  <a href="#about" className="hover:text-brand-primary transition-colors">About Us</a>
+                  <a
+                    href="#about"
+                    className="hover:text-brand-primary transition-colors"
+                  >
+                    About Us
+                  </a>
                 </li>
                 <li>
-                  <a href="#services" className="hover:text-brand-primary transition-colors">Treatments</a>
+                  <a
+                    href="#services"
+                    className="hover:text-brand-primary transition-colors"
+                  >
+                    Treatments
+                  </a>
                 </li>
                 <li>
-                  <a href="#packages" className="hover:text-brand-primary transition-colors">Gift Cards</a>
+                  <a
+                    href="#packages"
+                    className="hover:text-brand-primary transition-colors"
+                  >
+                    Gift Cards
+                  </a>
                 </li>
                 <li>
-                  <a href="#news" className="hover:text-brand-primary transition-colors">Careers</a>
+                  <a
+                    href="#news"
+                    className="hover:text-brand-primary transition-colors"
+                  >
+                    Careers
+                  </a>
                 </li>
               </ul>
             </div>
@@ -732,13 +793,28 @@ export default function Home() {
               </h4>
               <ul className="space-y-2.5 text-xs md:text-sm font-sans text-brand-charcoal/70">
                 <li>
-                  <a href="#" className="hover:text-brand-primary transition-colors">Privacy Policy</a>
+                  <a
+                    href="#"
+                    className="hover:text-brand-primary transition-colors"
+                  >
+                    Privacy Policy
+                  </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-brand-primary transition-colors">Terms of Service</a>
+                  <a
+                    href="#"
+                    className="hover:text-brand-primary transition-colors"
+                  >
+                    Terms of Service
+                  </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-brand-primary transition-colors">Spa Etiquette</a>
+                  <a
+                    href="#"
+                    className="hover:text-brand-primary transition-colors"
+                  >
+                    Spa Etiquette
+                  </a>
                 </li>
               </ul>
             </div>
@@ -758,7 +834,10 @@ export default function Home() {
                   <span>Thank you for subscribing to Aura Wellness!</span>
                 </div>
               ) : (
-                <form onSubmit={handleNewsletterSubmit} className="flex flex-col gap-2">
+                <form
+                  onSubmit={handleNewsletterSubmit}
+                  className="flex flex-col gap-2"
+                >
                   <Input
                     type="email"
                     placeholder="Your email address"
@@ -776,7 +855,6 @@ export default function Home() {
                 </form>
               )}
             </div>
-
           </div>
 
           {/* Bottom metadata */}
@@ -784,7 +862,6 @@ export default function Home() {
             <span>© 2024 Aura Luxury Wellness. All rights reserved.</span>
             <span>Designed with Intent</span>
           </div>
-
         </div>
       </footer>
 
@@ -792,7 +869,6 @@ export default function Home() {
       {isBookingOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
           <div className="bg-brand-cream border border-brand-border w-full max-w-md rounded-3xl p-6 md:p-8 shadow-2xl relative animate-scale-in">
-
             <button
               onClick={() => setIsBookingOpen(false)}
               className="absolute top-4 right-4 p-2 text-brand-charcoal/60 hover:text-brand-charcoal hover:bg-brand-card-cream/40 rounded-full transition-all"
@@ -806,9 +882,17 @@ export default function Home() {
                 <div className="w-14 h-14 bg-brand-sage text-brand-sage-dark rounded-full flex items-center justify-center mx-auto shadow-md">
                   <CheckCircle className="h-8 w-8" />
                 </div>
-                <h3 className="font-serif text-2xl text-brand-charcoal">Booking Request Received!</h3>
+                <h3 className="font-serif text-2xl text-brand-charcoal">
+                  Booking Request Received!
+                </h3>
                 <p className="text-xs md:text-sm text-brand-charcoal/70 font-sans leading-relaxed">
-                  Thank you, <span className="font-semibold">{bookingName}</span>. We have scheduled your <span className="font-semibold">{bookingService}</span> session for <span className="font-semibold">{bookingDate}</span>. Our sanctuary hosts will contact you shortly to confirm.
+                  Thank you,{" "}
+                  <span className="font-semibold">{bookingName}</span>. We have
+                  scheduled your{" "}
+                  <span className="font-semibold">{bookingService}</span>{" "}
+                  session for{" "}
+                  <span className="font-semibold">{bookingDate}</span>. Our
+                  sanctuary hosts will contact you shortly to confirm.
                 </p>
               </div>
             ) : (
@@ -817,13 +901,18 @@ export default function Home() {
                   <span className="text-[10px] tracking-widest text-brand-primary font-bold uppercase block mb-1">
                     DESPOKE EXPERIENCES
                   </span>
-                  <h3 className="font-serif text-2xl text-brand-charcoal">Book a Ritual</h3>
+                  <h3 className="font-serif text-2xl text-brand-charcoal">
+                    Book a Ritual
+                  </h3>
                 </div>
 
                 <div className="space-y-4">
                   {/* Name field */}
                   <div className="space-y-1.5">
-                    <label htmlFor="bookingName" className="text-[10px] tracking-wider uppercase font-semibold text-brand-charcoal/60 font-sans">
+                    <label
+                      htmlFor="bookingName"
+                      className="text-[10px] tracking-wider uppercase font-semibold text-brand-charcoal/60 font-sans"
+                    >
                       Your Name
                     </label>
                     <Input
@@ -839,7 +928,10 @@ export default function Home() {
 
                   {/* Treatment Select */}
                   <div className="space-y-1.5">
-                    <label htmlFor="bookingService" className="text-[10px] tracking-wider uppercase font-semibold text-brand-charcoal/60 font-sans">
+                    <label
+                      htmlFor="bookingService"
+                      className="text-[10px] tracking-wider uppercase font-semibold text-brand-charcoal/60 font-sans"
+                    >
                       Select Treatment
                     </label>
                     <select
@@ -856,9 +948,15 @@ export default function Home() {
                         ))
                       ) : (
                         <>
-                          <option value="Therapeutic Massage">Therapeutic Massage</option>
-                          <option value="Rejuvenating Facial">Rejuvenating Facial</option>
-                          <option value="Wellness Consultation">Wellness Consultation</option>
+                          <option value="Therapeutic Massage">
+                            Therapeutic Massage
+                          </option>
+                          <option value="Rejuvenating Facial">
+                            Rejuvenating Facial
+                          </option>
+                          <option value="Wellness Consultation">
+                            Wellness Consultation
+                          </option>
                         </>
                       )}
                     </select>
@@ -866,7 +964,10 @@ export default function Home() {
 
                   {/* Date selection */}
                   <div className="space-y-1.5">
-                    <label htmlFor="bookingDate" className="text-[10px] tracking-wider uppercase font-semibold text-brand-charcoal/60 font-sans">
+                    <label
+                      htmlFor="bookingDate"
+                      className="text-[10px] tracking-wider uppercase font-semibold text-brand-charcoal/60 font-sans"
+                    >
                       Preferred Date & Time
                     </label>
                     <Input
@@ -991,7 +1092,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

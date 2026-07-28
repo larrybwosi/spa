@@ -16,7 +16,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "AURA WELLNESS - Luxury Spa & Rejuvenation Sanctuary",
-  description: "Experience serenity at Aura Wellness. Our bespoke wellness rituals are designed to harmonize your body, mind, and spirit in an atmosphere of quiet luxury.",
+  description:
+    "Experience serenity at Aura Wellness. Our bespoke wellness rituals are designed to harmonize your body, mind, and spirit in an atmosphere of quiet luxury.",
 };
 
 export default function RootLayout({

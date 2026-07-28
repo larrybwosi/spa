@@ -1,15 +1,20 @@
-import 'dotenv/config';
-import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../src/prisma.service';
-import { AuthService } from '../src/auth/auth.service';
-import { ProductsService } from '../src/products/products.service';
-import { ServicesService } from '../src/services/services.service';
-import { BookingsService } from '../src/bookings/bookings.service';
-import { OrdersService } from '../src/orders/orders.service';
-import { Role, BookingStatus } from '@prisma/client';
-import { ConflictException, UnauthorizedException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import "dotenv/config";
+import { Test, TestingModule } from "@nestjs/testing";
+import { PrismaService } from "../src/prisma.service";
+import { AuthService } from "../src/auth/auth.service";
+import { ProductsService } from "../src/products/products.service";
+import { ServicesService } from "../src/services/services.service";
+import { BookingsService } from "../src/bookings/bookings.service";
+import { OrdersService } from "../src/orders/orders.service";
+import { Role, BookingStatus } from "@prisma/client";
+import {
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
 
-describe('Spa Platform End-to-End Core Logic Tests', () => {
+describe("Spa Platform End-to-End Core Logic Tests", () => {
   let module: TestingModule;
   let prisma: PrismaService;
   let authService: AuthService;
@@ -59,56 +64,56 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
     await prisma.user.deleteMany({});
   });
 
-  describe('Authentication Module tests', () => {
-    it('should register a new client user', async () => {
+  describe("Authentication Module tests", () => {
+    it("should register a new client user", async () => {
       const user = await authService.signUp({
-        name: 'John Doe',
-        email: 'john@example.com',
-        password: 'password123',
+        name: "John Doe",
+        email: "john@example.com",
+        password: "password123",
         role: Role.CLIENT,
       });
 
       expect(user).toBeDefined();
-      expect(user.name).toBe('John Doe');
-      expect(user.email).toBe('john@example.com');
+      expect(user.name).toBe("John Doe");
+      expect(user.email).toBe("john@example.com");
       expect(user.role).toBe(Role.CLIENT);
 
       const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
       expect(dbUser).toBeDefined();
     });
 
-    it('should prevent registration with duplicate email address', async () => {
+    it("should prevent registration with duplicate email address", async () => {
       await authService.signUp({
-        name: 'User One',
-        email: 'duplicate@example.com',
-        password: 'password123',
+        name: "User One",
+        email: "duplicate@example.com",
+        password: "password123",
       });
 
       await expect(
         authService.signUp({
-          name: 'User Two',
-          email: 'duplicate@example.com',
-          password: 'anotherpassword',
-        })
+          name: "User Two",
+          email: "duplicate@example.com",
+          password: "anotherpassword",
+        }),
       ).rejects.toThrow(ConflictException);
     });
 
-    it('should sign in registered user and generate session token', async () => {
+    it("should sign in registered user and generate session token", async () => {
       await authService.signUp({
-        name: 'Jane Doe',
-        email: 'jane@example.com',
-        password: 'securepassword',
+        name: "Jane Doe",
+        email: "jane@example.com",
+        password: "securepassword",
         role: Role.STAFF,
       });
 
       const result = await authService.signIn({
-        email: 'jane@example.com',
-        password: 'securepassword',
+        email: "jane@example.com",
+        password: "securepassword",
       });
 
       expect(result).toBeDefined();
       expect(result.token).toBeDefined();
-      expect(result.user.name).toBe('Jane Doe');
+      expect(result.user.name).toBe("Jane Doe");
       expect(result.user.role).toBe(Role.STAFF);
 
       // Verify session exists in database
@@ -119,31 +124,31 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
       expect(dbSession?.userId).toBe(result.session.userId);
     });
 
-    it('should reject sign-in with incorrect password', async () => {
+    it("should reject sign-in with incorrect password", async () => {
       await authService.signUp({
-        name: 'Test Account',
-        email: 'test@example.com',
-        password: 'correctpassword',
+        name: "Test Account",
+        email: "test@example.com",
+        password: "correctpassword",
       });
 
       await expect(
         authService.signIn({
-          email: 'test@example.com',
-          password: 'wrongpassword',
-        })
+          email: "test@example.com",
+          password: "wrongpassword",
+        }),
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should successfully validate session tokens and destroy on sign-out', async () => {
+    it("should successfully validate session tokens and destroy on sign-out", async () => {
       const user = await authService.signUp({
-        name: 'User Session',
-        email: 'session@example.com',
-        password: 'password123',
+        name: "User Session",
+        email: "session@example.com",
+        password: "password123",
       });
 
       const { token } = await authService.signIn({
-        email: 'session@example.com',
-        password: 'password123',
+        email: "session@example.com",
+        password: "password123",
       });
 
       // Token should validate successfully
@@ -160,45 +165,45 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
     });
   });
 
-  describe('Products CRUD Module tests', () => {
-    it('should create and retrieve products', async () => {
+  describe("Products CRUD Module tests", () => {
+    it("should create and retrieve products", async () => {
       const product = await productsService.create({
-        name: 'Lavender Essential Oil',
-        description: 'Therapeutic grade lavender oil',
+        name: "Lavender Essential Oil",
+        description: "Therapeutic grade lavender oil",
         price: 15.99,
         stock: 50,
       });
 
       expect(product).toBeDefined();
       expect(product.id).toBeDefined();
-      expect(product.name).toBe('Lavender Essential Oil');
+      expect(product.name).toBe("Lavender Essential Oil");
 
       const retrieved = await productsService.getOne(product.id);
       expect(retrieved.price).toBe(15.99);
       expect(retrieved.stock).toBe(50);
     });
 
-    it('should prevent creating products with negative stock or price', async () => {
+    it("should prevent creating products with negative stock or price", async () => {
       await expect(
         productsService.create({
-          name: 'Invalid Product',
+          name: "Invalid Product",
           price: -5,
           stock: 10,
-        })
+        }),
       ).rejects.toThrow(BadRequestException);
 
       await expect(
         productsService.create({
-          name: 'Invalid Product 2',
+          name: "Invalid Product 2",
           price: 10,
           stock: -1,
-        })
+        }),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should update product details correctly', async () => {
+    it("should update product details correctly", async () => {
       const product = await productsService.create({
-        name: 'Clay Mask',
+        name: "Clay Mask",
         price: 25.0,
         stock: 15,
       });
@@ -212,9 +217,9 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
       expect(updated.stock).toBe(20);
     });
 
-    it('should delete products', async () => {
+    it("should delete products", async () => {
       const product = await productsService.create({
-        name: 'To Delete',
+        name: "To Delete",
         price: 5.0,
         stock: 1,
       });
@@ -225,71 +230,71 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
     });
   });
 
-  describe('Services CRUD Module tests', () => {
-    it('should create and retrieve services', async () => {
+  describe("Services CRUD Module tests", () => {
+    it("should create and retrieve services", async () => {
       const service = await servicesService.create({
-        name: 'Hot Stone Massage',
-        description: 'Deeply relaxing massage with heated stones',
+        name: "Hot Stone Massage",
+        description: "Deeply relaxing massage with heated stones",
         duration: 90,
         price: 120.0,
       });
 
       expect(service).toBeDefined();
       expect(service.id).toBeDefined();
-      expect(service.name).toBe('Hot Stone Massage');
+      expect(service.name).toBe("Hot Stone Massage");
       expect(service.duration).toBe(90);
 
       const retrieved = await servicesService.getOne(service.id);
       expect(retrieved.price).toBe(120.0);
     });
 
-    it('should prevent creating services with negative price or zero duration', async () => {
+    it("should prevent creating services with negative price or zero duration", async () => {
       await expect(
         servicesService.create({
-          name: 'Invalid Service',
+          name: "Invalid Service",
           duration: 0,
           price: 50,
-        })
+        }),
       ).rejects.toThrow(BadRequestException);
 
       await expect(
         servicesService.create({
-          name: 'Invalid Service 2',
+          name: "Invalid Service 2",
           duration: 30,
           price: -10,
-        })
+        }),
       ).rejects.toThrow(BadRequestException);
     });
   });
 
-  describe('Bookings Module tests', () => {
+  describe("Bookings Module tests", () => {
     let clientUser: any;
     let staffUser: any;
     let service: any;
 
     beforeEach(async () => {
       clientUser = await authService.signUp({
-        name: 'Amy Client',
-        email: 'amy@example.com',
-        password: 'password123',
+        name: "Amy Client",
+        email: "amy@example.com",
+        password: "password123",
         role: Role.CLIENT,
       });
 
       staffUser = await authService.signUp({
-        name: 'Therapist John',
-        email: 'john-therapist@example.com',
-        password: 'password123',
+        name: "Therapist John",
+        email: "john-therapist@example.com",
+        password: "password123",
         role: Role.STAFF,
       });
 
       service = await servicesService.create({
-        name: 'Swedish Massage',
+        name: "Swedish Massage",
         duration: 60,
         price: 80.0,
       });
     });
 
-    it('should create a booking in the future with a valid staff therapist', async () => {
+    it("should create a booking in the future with a valid staff therapist", async () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -305,7 +310,7 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
       expect(booking.status).toBe(BookingStatus.PENDING);
     });
 
-    it('should prevent booking with past dates', async () => {
+    it("should prevent booking with past dates", async () => {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
 
@@ -314,19 +319,19 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
           serviceId: service.id,
           staffId: staffUser.id,
           dateTime: yesterday.toISOString(),
-        })
+        }),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should prevent booking with an invalid therapist (e.g. another client)', async () => {
+    it("should prevent booking with an invalid therapist (e.g. another client)", async () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       // Try to book service with another client instead of therapist
       const anotherClient = await authService.signUp({
-        name: 'Another Client',
-        email: 'client2@example.com',
-        password: 'password123',
+        name: "Another Client",
+        email: "client2@example.com",
+        password: "password123",
         role: Role.CLIENT,
       });
 
@@ -335,11 +340,11 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
           serviceId: service.id,
           staffId: anotherClient.id,
           dateTime: tomorrow.toISOString(),
-        })
+        }),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should allow clients to cancel booking, and staff to update to any status', async () => {
+    it("should allow clients to cancel booking, and staff to update to any status", async () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -350,47 +355,59 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
       });
 
       // Client cancels booking
-      const cancelledBooking = await bookingsService.updateStatus(booking.id, clientUser, BookingStatus.CANCELLED);
+      const cancelledBooking = await bookingsService.updateStatus(
+        booking.id,
+        clientUser,
+        BookingStatus.CANCELLED,
+      );
       expect(cancelledBooking.status).toBe(BookingStatus.CANCELLED);
 
       // Clients should not be able to confirm or complete bookings
       await expect(
-        bookingsService.updateStatus(booking.id, clientUser, BookingStatus.CONFIRMED)
+        bookingsService.updateStatus(
+          booking.id,
+          clientUser,
+          BookingStatus.CONFIRMED,
+        ),
       ).rejects.toThrow(ForbiddenException);
 
       // Staff should be able to confirm booking
-      const confirmedBooking = await bookingsService.updateStatus(booking.id, staffUser, BookingStatus.CONFIRMED);
+      const confirmedBooking = await bookingsService.updateStatus(
+        booking.id,
+        staffUser,
+        BookingStatus.CONFIRMED,
+      );
       expect(confirmedBooking.status).toBe(BookingStatus.CONFIRMED);
     });
   });
 
-  describe('Orders and Inventory Module tests', () => {
+  describe("Orders and Inventory Module tests", () => {
     let clientUser: any;
     let product1: any;
     let product2: any;
 
     beforeEach(async () => {
       clientUser = await authService.signUp({
-        name: 'Buyer Client',
-        email: 'buyer@example.com',
-        password: 'password123',
+        name: "Buyer Client",
+        email: "buyer@example.com",
+        password: "password123",
         role: Role.CLIENT,
       });
 
       product1 = await productsService.create({
-        name: 'Moisturizer',
+        name: "Moisturizer",
         price: 30.0,
         stock: 10,
       });
 
       product2 = await productsService.create({
-        name: 'Shampoo',
+        name: "Shampoo",
         price: 15.0,
         stock: 5,
       });
     });
 
-    it('should place a multi-item product order, decrementing stock and calculating total correctly', async () => {
+    it("should place a multi-item product order, decrementing stock and calculating total correctly", async () => {
       const order = await ordersService.create(clientUser, {
         items: [
           { productId: product1.id, quantity: 2 },
@@ -410,13 +427,13 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
       expect(p2.stock).toBe(4); // 5 - 1
     });
 
-    it('should prevent order placement if requested stock is not available', async () => {
+    it("should prevent order placement if requested stock is not available", async () => {
       await expect(
         ordersService.create(clientUser, {
           items: [
             { productId: product2.id, quantity: 6 }, // Only 5 available
           ],
-        })
+        }),
       ).rejects.toThrow(BadRequestException);
 
       // Ensure stock was not decremented due to atomic transactional rollback
