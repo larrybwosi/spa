@@ -273,4 +273,33 @@ export class ScrymeService {
   async listCatalogServices() {
     return this.request<any[]>("GET", "/v3/{orgSlug}/catalog/services");
   }
+
+  // --- Orders ---
+
+  async createOrder(dto: {
+    customerId?: string;
+    locationId: string;
+    items?: { variantId: string; quantity: number; unitPrice?: number }[];
+    services?: {
+      serviceId: string;
+      scheduledStartTime: string;
+      scheduledEndTime?: string;
+      staffIds?: string[];
+      resourceIds?: string[];
+      notes?: string;
+    }[];
+    shippingAddress?: any;
+    channel?: string;
+    notes?: string;
+  }) {
+    return this.request<any>("POST", "/v3/{orgSlug}/orders", dto);
+  }
+
+  async listOrders() {
+    return this.request<any[]>("GET", "/v3/{orgSlug}/orders");
+  }
+
+  async updateOrderStatus(id: string, dto: { status: string }) {
+    return this.request<any>("POST", `/v3/{orgSlug}/orders/${id}/status`, dto);
+  }
 }
