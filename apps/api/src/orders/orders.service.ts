@@ -39,7 +39,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     for (const item of this.failedOrdersQueue) {
       try {
         await this.scrymeService.createOrder(item.payload);
-      } catch (err) {
+      } catch {
         nextQueue.push(item);
       }
     }
@@ -108,7 +108,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
           .filter((o) => o.clientId === user.id)
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       }
-    } catch (error) {
+    } catch {
       if (user.role === Role.ADMIN || user.role === Role.STAFF) {
         return this.prisma.order.findMany({
           include: {
@@ -143,7 +143,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       if (found) {
         order = await this.mapScrymeOrder(found);
       }
-    } catch (error) {
+    } catch {
       // Ignored, fallback below
     }
 
@@ -265,7 +265,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         client,
         items: orderItems,
       };
-    } catch (error) {
+    } catch {
       // Fallback to local DB and queue
       return this.prisma.$transaction(async (tx) => {
         const orderItemsToCreate = [];

@@ -65,7 +65,9 @@ export class ScrymeService {
         let errorDetails = "";
         try {
           errorDetails = await response.text();
-        } catch {}
+        } catch {
+          // Ignored reading text error
+        }
         this.logger.error(
           `Scryme Token Exchange error (${response.status}): ${errorDetails}`,
         );
@@ -127,7 +129,9 @@ export class ScrymeService {
         let errorDetails = "";
         try {
           errorDetails = await response.text();
-        } catch {}
+        } catch {
+          // Ignored reading text error
+        }
         this.logger.error(
           `Scryme API error (${response.status}): ${errorDetails}`,
         );

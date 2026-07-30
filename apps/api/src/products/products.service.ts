@@ -117,7 +117,9 @@ export class ProductsService {
         if (foundFresh) {
           return foundFresh;
         }
-      } catch {}
+      } catch {
+        // Ignored, try local DB or fallback
+      }
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
     return product;

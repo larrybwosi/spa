@@ -39,7 +39,7 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
     for (const item of this.failedBookingsQueue) {
       try {
         await this.scrymeService.createBooking(item.payload);
-      } catch (err) {
+      } catch {
         nextQueue.push(item);
       }
     }
@@ -104,7 +104,7 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
           .filter((b) => b.clientId === user.id)
           .sort((a, b) => b.dateTime.getTime() - a.dateTime.getTime());
       }
-    } catch (error) {
+    } catch {
       if (user.role === Role.ADMIN) {
         return this.prisma.booking.findMany({
           include: { client: true, service: true, staff: true },
@@ -132,7 +132,7 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
     try {
       const scrymeBooking = await this.scrymeService.getBooking(id);
       booking = await this.mapScrymeBooking(scrymeBooking);
-    } catch (error) {
+    } catch {
       booking = await this.prisma.booking.findUnique({
         where: { id },
         include: { client: true, service: true, staff: true },
@@ -234,7 +234,7 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
         service,
         staff,
       };
-    } catch (error) {
+    } catch {
       // 7. Fallback to local persistence
       const localBooking = await this.prisma.booking.create({
         data: {
