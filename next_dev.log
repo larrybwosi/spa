@@ -5,28 +5,9 @@
 ▲ Next.js 16.2.12 (Turbopack)
 - Local:         http://localhost:3000
 - Network:       http://192.168.0.2:3000
-✓ Ready in 616ms
+✓ Ready in 786ms
 
 ○ Compiling / ...
- HEAD / 200 in 4.7s (next.js: 4.3s, application-code: 380ms)
- GET / 200 in 174ms (next.js: 9ms, application-code: 165ms)
- GET /services 200 in 1137ms (next.js: 908ms, application-code: 229ms)
-[browser] Could not fetch services, using fallbacks. TypeError: Failed to fetch
-    at ServicesPage.useEffect (app/services/page.tsx:111:5)
-  109 |       .catch(() => setUser(null));
-  110 |
-> 111 |     fetch("http://localhost:3001/api/services")
-      |     ^
-  112 |       .then((res) => {
-  113 |         if (res.ok) return res.json();
-  114 |         throw new Error("Failed to fetch"); (app/services/page.tsx:118:17)
- GET /booking 200 in 1999ms (next.js: 1646ms, application-code: 353ms)
-[browser] Could not fetch services, using fallbacks. TypeError: Failed to fetch
-    at BookingPage.useEffect (app/booking/page.tsx:415:5)
-  413 |       .catch(() => setUser(null));
-  414 |
-> 415 |     fetch("http://localhost:3001/api/services")
-      |     ^
-  416 |       .then((res) => {
-  417 |         if (res.ok) return res.json();
-  418 |         throw new Error("Failed to fetch"); (app/booking/page.tsx:421:29)
+ GET / 200 in 4.2s (next.js: 3.8s, application-code: 391ms)
+ GET /products 200 in 1179ms (next.js: 891ms, application-code: 288ms)
+ GET /products/awesome-sneaker 200 in 2.4s (next.js: 2.1s, application-code: 250ms)

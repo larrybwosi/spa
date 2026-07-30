@@ -1,0 +1,9 @@
+
+> api@0.0.1 start /app/apps/api
+> nest start
+
+sh: 1: nest: not found
+/app/apps/api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  api@0.0.1 start: `nest start`
+spawn ENOENT
+ WARN   Local package.json exists, but node_modules missing, did you mean to install?
