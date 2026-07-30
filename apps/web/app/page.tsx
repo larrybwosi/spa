@@ -1,16 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
-import { Card } from "@repo/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@repo/ui/dialog";
 import {
   MapPin,
   ArrowRight,
@@ -18,16 +11,12 @@ import {
   Menu,
   X,
   Sparkles,
-  Compass,
   CheckCircle,
-  Calendar,
-  Lock,
   Mail,
-  User as UserIcon,
-  ShieldCheck,
   ChevronRight,
   PhoneCall,
-  Clock
+  Clock,
+  ShieldCheck
 } from "lucide-react";
 
 const InstagramIcon = () => (
@@ -70,22 +59,8 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
 
-  // Booking modal state
-  const [isBookingOpen, setIsBookingOpen] = useState(false);
-  const [bookingName, setBookingName] = useState("");
-  const [bookingService, setBookingService] = useState("Therapeutic Massage");
-  const [bookingDate, setBookingDate] = useState("");
-  const [bookingSubmitted, setBookingSubmitted] = useState(false);
-
-  // Authentication & API Integration states
+  // User session state
   const [user, setUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
-  const [authName, setAuthName] = useState("");
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
-  const [authError, setAuthError] = useState("");
-  const [services, setServices] = useState<any[]>([]);
 
   // Fetch session on load
   useEffect(() => {
@@ -94,22 +69,8 @@ export default function Home() {
         if (res.ok) return res.json();
         throw new Error("No session");
       })
-      .then((data) => {
-        setUser(data.user);
-        if (data.user) {
-          setBookingName(data.user.name);
-        }
-      })
+      .then((data) => setUser(data.user))
       .catch(() => setUser(null));
-
-    // Fetch services
-    fetch("http://localhost:3001/api/services")
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error("Failed to fetch");
-      })
-      .then((data) => setServices(data))
-      .catch((e) => console.error("Could not fetch services, using fallback.", e));
   }, []);
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
@@ -119,48 +80,6 @@ export default function Home() {
       setTimeout(() => {
         setEmail("");
       }, 3000);
-    }
-  };
-
-  const handleAuthSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError("");
-    const url = authMode === "login"
-      ? "http://localhost:3001/api/auth/signin"
-      : "http://localhost:3001/api/auth/signup";
-
-    const payload = authMode === "login"
-      ? { email: authEmail, password: authPassword }
-      : { name: authName, email: authEmail, password: authPassword, role: "CLIENT" };
-
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || "Authentication failed");
-      }
-
-      const data = await res.json();
-
-      if (authMode === "login") {
-        setUser(data.user);
-        setBookingName(data.user.name);
-        setIsAuthModalOpen(false);
-        setAuthEmail("");
-        setAuthPassword("");
-      } else {
-        setAuthMode("login");
-        setAuthPassword("");
-        alert("Registration successful! Please sign in with your credentials.");
-      }
-    } catch (err: any) {
-      setAuthError(err.message || "An error occurred");
     }
   };
 
@@ -176,51 +95,6 @@ export default function Home() {
     setUser(null);
   };
 
-  const handleBookingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) {
-      setIsBookingOpen(false);
-      setAuthMode("login");
-      setIsAuthModalOpen(true);
-      return;
-    }
-
-    let targetServiceId = bookingService;
-    if (!targetServiceId.startsWith("s")) {
-      if (bookingService === "Therapeutic Massage") targetServiceId = "s1";
-      else if (bookingService === "Rejuvenating Facial") targetServiceId = "s4";
-      else if (bookingService === "Wellness Consultation") targetServiceId = "s3";
-      else targetServiceId = "s1";
-    }
-
-    try {
-      const res = await fetch("http://localhost:3001/api/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          serviceId: targetServiceId,
-          staffId: "staff1", // Default Elena Rostova
-          dateTime: new Date(bookingDate).toISOString(),
-        }),
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || "Failed to submit booking");
-      }
-
-      setBookingSubmitted(true);
-      setTimeout(() => {
-        setBookingSubmitted(false);
-        setIsBookingOpen(false);
-        setBookingDate("");
-      }, 3000);
-    } catch (err: any) {
-      alert(err.message || "An error occurred while booking");
-    }
-  };
-
   return (
     <div className="relative min-h-screen bg-brand-cream text-brand-charcoal overflow-x-hidden font-sans selection:bg-brand-primary/20">
 
@@ -229,11 +103,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
 
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center gap-2 group">
             <span className="font-serif text-xl sm:text-2xl tracking-[0.25em] text-brand-primary group-hover:text-brand-primary-hover transition-colors font-semibold">
               AURA WELLNESS
             </span>
-          </a>
+          </Link>
 
           {/* Desktop Nav Links */}
           <nav className="hidden lg:flex items-center space-x-8 text-xs tracking-[0.2em] font-medium uppercase text-brand-charcoal/80">
@@ -241,10 +115,10 @@ export default function Home() {
               About
               <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
             </a>
-            <a href="#services" className="hover:text-brand-primary transition-colors py-2 relative group">
+            <Link href="/services" className="hover:text-brand-primary transition-colors py-2 relative group">
               Services
               <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
-            </a>
+            </Link>
             <a href="#philosophy" className="hover:text-brand-primary transition-colors py-2 relative group">
               Philosophy
               <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
@@ -270,23 +144,20 @@ export default function Home() {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => {
-                  setAuthMode("login");
-                  setIsAuthModalOpen(true);
-                }}
+              <Link
+                href="/booking"
                 className="text-xs uppercase tracking-widest font-sans font-bold hover:text-brand-primary transition-colors text-brand-charcoal/85 cursor-pointer"
               >
                 Sign In
-              </button>
+              </Link>
             )}
 
             <Button
-              onClick={() => setIsBookingOpen(true)}
+              asChild
               variant="default"
-              className="text-xs uppercase tracking-[0.15em] bg-brand-primary text-white border border-brand-primary px-7 py-5 hover:bg-brand-primary-hover shadow-md hover:shadow-lg transition-all duration-300 rounded-full font-medium"
+              className="text-xs uppercase tracking-[0.15em] bg-brand-primary text-white border border-brand-primary px-7 py-5 hover:bg-brand-primary-hover shadow-md hover:shadow-lg transition-all duration-300 rounded-lg font-medium"
             >
-              Book Now
+              <Link href="/booking">Book Now</Link>
             </Button>
           </div>
 
@@ -316,14 +187,14 @@ export default function Home() {
             <span>About</span>
             <ChevronRight className="h-4 w-4 text-brand-primary opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
           </a>
-          <a
-            href="#services"
+          <Link
+            href="/services"
             onClick={() => setIsMobileMenuOpen(false)}
             className="hover:text-brand-primary transition-colors py-3 border-b border-brand-border/40 flex justify-between items-center group"
           >
             <span>Services</span>
             <ChevronRight className="h-4 w-4 text-brand-primary opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
-          </a>
+          </Link>
           <a
             href="#philosophy"
             onClick={() => setIsMobileMenuOpen(false)}
@@ -357,28 +228,22 @@ export default function Home() {
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                setAuthMode("login");
-                setIsAuthModalOpen(true);
-              }}
+            <Link
+              href="/booking"
+              onClick={() => setIsMobileMenuOpen(false)}
               className="hover:text-brand-primary text-left font-serif transition-colors py-4 border-b border-brand-border/40 text-lg flex justify-between items-center"
             >
               <span>Sign In</span>
               <ChevronRight className="h-4 w-4 text-brand-primary" />
-            </button>
+            </Link>
           )}
 
           <div className="pt-8">
             <Button
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                setIsBookingOpen(true);
-              }}
-              className="w-full text-xs uppercase tracking-[0.2em] bg-brand-primary text-white py-6 rounded-full hover:bg-brand-primary-hover shadow-md"
+              asChild
+              className="w-full text-xs uppercase tracking-[0.2em] bg-brand-primary text-white py-6 rounded-lg hover:bg-brand-primary-hover shadow-md"
             >
-              Book Now
+              <Link href="/booking" onClick={() => setIsMobileMenuOpen(false)}>Book Now</Link>
             </Button>
           </div>
         </nav>
@@ -416,15 +281,15 @@ export default function Home() {
           <div className="flex flex-wrap justify-center gap-3 mb-10 max-w-xl mx-auto">
             <span className="px-4 py-2 rounded-full border border-white/15 bg-black/20 backdrop-blur-md text-[10px] tracking-[0.15em] uppercase font-medium text-brand-cream flex items-center gap-1.5 shadow-sm">
               <ShieldCheck className="h-3 w-3 text-brand-sage" />
-              Easy Now
+              Easy Access
             </span>
             <span className="px-4 py-2 rounded-full border border-white/15 bg-black/20 backdrop-blur-md text-[10px] tracking-[0.15em] uppercase font-medium text-brand-cream flex items-center gap-1.5 shadow-sm">
               <PhoneCall className="h-3 w-3 text-brand-sage" />
-              Call via web
+              Instant Support
             </span>
             <span className="px-4 py-2 rounded-full border border-white/15 bg-black/20 backdrop-blur-md text-[10px] tracking-[0.15em] uppercase font-medium text-brand-cream flex items-center gap-1.5 shadow-sm">
               <Clock className="h-3 w-3 text-brand-sage" />
-              Instant Booking
+              Dedicated Booking
             </span>
           </div>
 
@@ -434,167 +299,40 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 max-w-md mx-auto sm:max-w-none">
             <Button
-              onClick={() => setIsBookingOpen(true)}
-              className="w-full sm:w-auto text-xs uppercase tracking-[0.2em] px-10 py-6 bg-brand-primary hover:bg-brand-primary-hover border border-brand-primary text-white shadow-lg transition-transform hover:scale-[1.03] duration-300 rounded-full font-medium"
+              asChild
+              className="w-full sm:w-auto text-xs uppercase tracking-[0.2em] px-10 py-6 bg-brand-primary hover:bg-brand-primary-hover border border-brand-primary text-white shadow-lg transition-transform hover:scale-[1.03] duration-300 rounded-lg font-medium"
             >
-              Book a Session
+              <Link href="/booking">Book a Session</Link>
             </Button>
-            <a
-              href="#services"
-              className="w-full sm:w-auto text-xs uppercase tracking-[0.2em] px-10 py-3.5 border border-white/35 bg-white/5 hover:bg-white/10 text-white transition-all rounded-full font-medium inline-flex items-center justify-center gap-2 hover:border-white/60"
+            <Link
+              href="/services"
+              className="w-full sm:w-auto text-xs uppercase tracking-[0.2em] px-10 py-3.5 border border-white/35 bg-white/5 hover:bg-white/10 text-white transition-all rounded-lg font-medium inline-flex items-center justify-center gap-2 hover:border-white/60"
             >
               <span>Explore Treatments</span>
               <ArrowRight className="h-3.5 w-3.5" />
-            </a>
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* CURATED TREATMENTS SECTION */}
-      <section id="services" className="py-20 sm:py-28 md:py-36 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-24">
+      {/* CURATED INTRO SECTION */}
+      <section id="about" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
+        <div className="max-w-3xl mx-auto">
           <span className="text-xs tracking-[0.25em] font-sans text-brand-primary uppercase block mb-4 font-bold">
-            SERVICES & EXPERIENCES
+            WELCOME TO AURA
           </span>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif text-brand-charcoal mb-6 font-normal tracking-wide">
-            Curated Treatments
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-brand-charcoal mb-6">
+            Bespoke Serenity & Quiet Luxury
           </h2>
           <div className="w-16 h-[1.5px] bg-brand-primary/40 mx-auto mb-6"></div>
-          <p className="text-sm sm:text-base text-brand-charcoal/70 leading-relaxed font-sans font-light max-w-xl mx-auto">
-            Discover our meticulously prepared range of holistic therapies, each crafted by our master practitioners to elevate your wellness journey.
+          <p className="text-sm sm:text-base text-brand-charcoal/70 leading-relaxed font-sans font-light max-w-2xl mx-auto mb-10">
+            Aura Wellness is designed as a sanctuary. We operate at the intersection of restorative physical therapy and quiet indulgence, ensuring that every touch is intentional and every ritual deeply transformative.
           </p>
-        </div>
-
-        {/* Dynamic Card Grid - Fully Responsive & Premium Visuals */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 items-stretch">
-
-          {/* Card 1: Massage image (Top-Left) */}
-          <div className="lg:col-span-7 group relative rounded-[2rem] overflow-hidden min-h-[380px] md:min-h-[460px] shadow-md flex flex-col justify-end p-8 sm:p-10 transition-all duration-500 hover:shadow-xl hover:scale-[1.01]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&q=80&w=1000"
-              alt="Therapeutic Massage"
-              className="absolute inset-0 w-full h-full object-cover brightness-60 group-hover:scale-105 transition-transform duration-700"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"></div>
-
-            <div className="relative z-10 text-white max-w-lg">
-              <span className="inline-block px-4 py-1.5 bg-brand-primary/80 border border-brand-primary/20 rounded-full text-[10px] tracking-[0.2em] uppercase font-bold mb-4 shadow-sm">
-                Signature Treatment
-              </span>
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-serif mb-3 text-white leading-tight">
-                Therapeutic Massage
-              </h3>
-              <p className="text-xs sm:text-sm text-brand-cream/80 font-sans font-light leading-relaxed mb-6">
-                Release deep muscular tension, soothe stress, and restore physical equilibrium with custom blended essential oils and signature deep tissue or Swedish techniques.
-              </p>
-              <div className="flex items-center gap-4 text-xs font-medium tracking-widest uppercase text-brand-sage">
-                <span>60/90 Mins</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-sage/50"></span>
-                <span>From $120</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                setBookingService("Therapeutic Massage");
-                setIsBookingOpen(true);
-              }}
-              className="absolute bottom-8 right-8 w-14 h-14 rounded-full bg-white text-brand-charcoal flex items-center justify-center hover:bg-brand-primary hover:text-white transition-all duration-300 shadow-lg group-hover:translate-x-1 cursor-pointer"
-              aria-label="Book Therapeutic Massage"
-            >
-              <ArrowRight className="h-5 w-5" />
-            </button>
+          <div className="flex justify-center gap-4">
+            <Button asChild variant="outline" className="rounded-lg h-10 px-6 uppercase tracking-wider font-semibold text-xs border-brand-border hover:bg-brand-primary hover:text-white transition-all">
+              <Link href="/services">Our Treatments Menu</Link>
+            </Button>
           </div>
-
-          {/* Card 2: Rejuvenating Facial Cream Card (Top-Right) */}
-          <Card className="lg:col-span-5 bg-brand-card-cream border border-brand-border/60 p-8 sm:p-10 flex flex-col justify-between rounded-[2rem] shadow-sm hover:shadow-lg transition-all duration-500 hover:scale-[1.01]">
-            <div className="flex flex-col gap-8">
-              <div className="w-14 h-14 rounded-full bg-white border border-brand-border/80 flex items-center justify-center text-brand-primary shadow-sm shrink-0">
-                <Sparkles className="h-6 w-6" />
-              </div>
-              <div className="space-y-4">
-                <span className="text-[10px] tracking-[0.25em] font-sans text-brand-primary uppercase font-bold">
-                  SKIN THERAPY
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-serif text-brand-charcoal tracking-wide leading-tight">
-                  Rejuvenating Facial
-                </h3>
-                <p className="text-xs sm:text-sm text-brand-charcoal/70 leading-relaxed font-sans font-light max-w-sm">
-                  Organic, cold-pressed nutrient-rich botanicals applied with expert facial massage flow to lift, clarify, and unveil your inner natural radiance.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-10 flex items-center justify-between border-t border-brand-border/50 mt-8">
-              <div className="text-xs text-brand-charcoal/60 font-medium tracking-wider uppercase">
-                60 Mins · $145
-              </div>
-              <button
-                onClick={() => {
-                  setBookingService("Rejuvenating Facial");
-                  setIsBookingOpen(true);
-                }}
-                className="flex items-center gap-2 text-xs tracking-widest uppercase font-bold text-brand-primary hover:text-brand-primary-hover group cursor-pointer"
-              >
-                <span>Book Now</span>
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          </Card>
-
-          {/* Card 3: Wellness Consultation Sage Green Card (Bottom-Left) */}
-          <Card className="lg:col-span-5 bg-brand-sage border-transparent p-8 sm:p-10 flex flex-col justify-between text-brand-sage-dark rounded-[2rem] shadow-sm hover:shadow-lg transition-all duration-500 hover:scale-[1.01]">
-            <div className="space-y-8">
-              <div className="w-14 h-14 rounded-full bg-[#e8ecd9] flex items-center justify-center text-brand-sage-dark shadow-xs shrink-0">
-                <Compass className="h-6 w-6" />
-              </div>
-              <div className="space-y-4">
-                <span className="text-[10px] tracking-[0.25em] uppercase font-bold opacity-80">
-                  HOLISTIC LIVING
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-serif text-brand-sage-dark tracking-wide leading-tight">
-                  Wellness Consultation
-                </h3>
-                <p className="text-xs sm:text-sm text-brand-sage-dark/85 leading-relaxed font-sans font-light max-w-sm">
-                  Receive an exhaustive, individual holistic assessment with nutrition and mindfulness planning designed to bring harmony into your fast-paced daily schedule.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-10 flex items-center justify-between border-t border-[#cad2af]/60 mt-8">
-              <div className="text-xs text-brand-sage-dark/80 font-medium tracking-wider uppercase">
-                45 Mins · $95
-              </div>
-              <button
-                onClick={() => {
-                  setBookingService("Wellness Consultation");
-                  setIsBookingOpen(true);
-                }}
-                className="flex items-center gap-2 text-xs tracking-widest uppercase font-bold text-brand-sage-dark hover:opacity-80 group cursor-pointer"
-              >
-                <span>Learn Details</span>
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          </Card>
-
-          {/* Card 4: Image of Bath Products/Bottles (Bottom-Right) */}
-          <div className="lg:col-span-7 group relative rounded-[2rem] overflow-hidden min-h-[300px] md:min-h-[460px] shadow-md flex flex-col justify-end p-8 transition-all duration-500 hover:shadow-xl hover:scale-[1.01]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000"
-              alt="Aura Luxury Skin Care Products"
-              className="absolute inset-0 w-full h-full object-cover brightness-95 group-hover:scale-105 transition-transform duration-700"
-            />
-            <div className="absolute inset-0 bg-black/15 group-hover:bg-black/10 transition-colors"></div>
-
-            {/* Subtle glassmorphism label */}
-            <div className="absolute top-6 right-6 px-5 py-2.5 bg-white/80 backdrop-blur-md border border-white/20 rounded-full text-[10px] tracking-[0.2em] text-brand-charcoal uppercase font-bold shadow-sm">
-              Aura Skin Range
-            </div>
-          </div>
-
         </div>
       </section>
 
@@ -603,7 +341,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
 
           {/* Left Column: Elegant Vertical Image */}
-          <div className="lg:col-span-5 relative aspect-3/4 rounded-[2rem] overflow-hidden shadow-md h-[450px] sm:h-[550px] lg:h-[650px] w-full">
+          <div className="lg:col-span-5 relative aspect-3/4 rounded-xl overflow-hidden shadow-md h-[450px] sm:h-[550px] lg:h-[650px] w-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1000"
@@ -630,7 +368,7 @@ export default function Home() {
                 At Aura Wellness, we hold that true health stems from profound, uncompromised inner peace. Our sanctuaries are meticulously sculpted to filter out the noise of modern life, offering an atmosphere where silence is celebrated and rejuvenation is treated as an art.
               </p>
               <p className="italic font-serif text-brand-primary text-base sm:text-lg pl-4 border-l-2 border-brand-primary/40 my-6">
-                "Our touch is intentional. Our therapies are grounded in time-honored rituals. Every second at Aura is curated with you at the center."
+                &ldquo;Our touch is intentional. Our therapies are grounded in time-honored rituals. Every second at Aura is curated with you at the center.&rdquo;
               </p>
               <p>
                 We source only the finest globally certified organic ingredients and partner exclusively with licensed practitioners who are absolute masters of their crafts, ensuring that every touch is intentional and every ritual is deeply transformative.
@@ -689,7 +427,7 @@ export default function Home() {
             </div>
 
             {/* Address box */}
-            <div className="flex items-start gap-4 p-6 rounded-2xl bg-brand-card-cream/50 border border-brand-border/60 max-w-md shadow-xs">
+            <div className="flex items-start gap-4 p-6 rounded-lg bg-brand-card-cream/50 border border-brand-border/60 max-w-md shadow-xs">
               <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-brand-primary shrink-0 shadow-sm">
                 <MapPin className="h-5 w-5" />
               </div>
@@ -708,7 +446,7 @@ export default function Home() {
             <div>
               <Button
                 onClick={() => window.open("https://maps.google.com", "_blank")}
-                className="flex items-center gap-2.5 text-xs uppercase tracking-[0.2em] bg-brand-primary text-white border border-brand-primary hover:bg-brand-primary-hover px-8 py-5 rounded-full transition-transform hover:scale-[1.02] shadow-md"
+                className="flex items-center gap-2.5 text-xs uppercase tracking-[0.2em] bg-brand-primary text-white border border-brand-primary hover:bg-brand-primary-hover px-8 py-5 rounded-lg transition-transform hover:scale-[1.02] shadow-md cursor-pointer"
               >
                 <span>Get Directions</span>
                 <ArrowUpRight className="h-4 w-4" />
@@ -717,7 +455,7 @@ export default function Home() {
           </div>
 
           {/* Right Column: Monochrome/Muted Spa Setup Image */}
-          <div className="lg:col-span-7 relative aspect-4/3 rounded-[2rem] overflow-hidden shadow-md h-[300px] sm:h-[450px] w-full order-1 lg:order-2">
+          <div className="lg:col-span-7 relative aspect-4/3 rounded-xl overflow-hidden shadow-md h-[300px] sm:h-[450px] w-full order-1 lg:order-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&q=80&w=1000"
@@ -773,7 +511,7 @@ export default function Home() {
                   <a href="#about" className="hover:text-brand-primary transition-colors">About Us</a>
                 </li>
                 <li>
-                  <a href="#services" className="hover:text-brand-primary transition-colors">Treatments</a>
+                  <Link href="/services" className="hover:text-brand-primary transition-colors">Treatments Menu</Link>
                 </li>
                 <li>
                   <a href="#philosophy" className="hover:text-brand-primary transition-colors">Philosophy</a>
@@ -812,7 +550,7 @@ export default function Home() {
               </p>
 
               {newsletterSubmitted ? (
-                <div className="flex items-center gap-3 p-4 bg-brand-sage/40 rounded-2xl border border-brand-sage/60 text-brand-sage-dark text-xs sm:text-sm animate-fade-in shadow-xs">
+                <div className="flex items-center gap-3 p-4 bg-brand-sage/40 rounded-lg border border-brand-sage/60 text-brand-sage-dark text-xs sm:text-sm animate-fade-in shadow-xs">
                   <CheckCircle className="h-5 w-5 text-brand-sage-dark shrink-0" />
                   <span>Thank you. Your email was successfully registered.</span>
                 </div>
@@ -826,12 +564,12 @@ export default function Home() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="bg-white border-brand-border text-brand-charcoal rounded-full pl-11 py-5 h-11 focus-visible:ring-brand-primary/50 text-xs sm:text-sm shadow-inner"
+                      className="bg-white border-brand-border text-brand-charcoal rounded-lg pl-11 py-5 h-11 focus-visible:ring-brand-primary/50 text-xs sm:text-sm shadow-inner"
                     />
                   </div>
                   <Button
                     type="submit"
-                    className="w-full text-[10px] sm:text-xs uppercase tracking-[0.2em] bg-brand-primary hover:bg-brand-primary-hover text-white border border-brand-primary py-5 rounded-full shadow-md font-semibold cursor-pointer"
+                    className="w-full text-[10px] sm:text-xs uppercase tracking-[0.2em] bg-brand-primary hover:bg-brand-primary-hover text-white border border-brand-primary py-5 rounded-lg shadow-md font-semibold cursor-pointer"
                   >
                     SUBSCRIBE
                   </Button>
@@ -849,209 +587,6 @@ export default function Home() {
 
         </div>
       </footer>
-
-      {/* BOOKING MODAL WITH SHADCN DIALOG */}
-      <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
-        <DialogContent className="bg-brand-cream border border-brand-border/60 rounded-[2rem] p-6 sm:p-8 max-w-md w-full text-brand-charcoal animate-scale-in">
-          <DialogHeader className="text-center pb-2">
-            <span className="text-[10px] tracking-[0.25em] text-brand-primary font-bold uppercase block mb-1">
-              BESPOKE EXPERIENCES
-            </span>
-            <DialogTitle className="font-serif text-2xl sm:text-3xl text-brand-charcoal font-normal tracking-wide">
-              Book a Ritual
-            </DialogTitle>
-          </DialogHeader>
-
-          {bookingSubmitted ? (
-            <div className="text-center py-6 space-y-4">
-              <div className="w-16 h-14 bg-brand-sage text-brand-sage-dark rounded-full flex items-center justify-center mx-auto shadow-sm">
-                <CheckCircle className="h-8 w-8" />
-              </div>
-              <h3 className="font-serif text-xl sm:text-2xl text-brand-charcoal">Booking Request Received!</h3>
-              <p className="text-xs sm:text-sm text-brand-charcoal/70 font-sans leading-relaxed">
-                Thank you, <span className="font-bold text-brand-charcoal">{bookingName}</span>. We have successfully scheduled your <span className="font-bold text-brand-charcoal">{bookingService}</span> session for <span className="font-bold text-brand-charcoal">{bookingDate}</span>. Our sanctuary hosts will contact you shortly to confirm your therapist.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleBookingSubmit} className="space-y-5 mt-2">
-              <div className="space-y-4">
-                {/* Name field */}
-                <div className="space-y-2">
-                  <label htmlFor="bookingName" className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
-                    Your Name
-                  </label>
-                  <div className="relative">
-                    <UserIcon className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40" />
-                    <Input
-                      id="bookingName"
-                      type="text"
-                      placeholder="e.g. Eleanor Vance"
-                      required
-                      value={bookingName}
-                      onChange={(e) => setBookingName(e.target.value)}
-                      className="bg-white border-brand-border rounded-full pl-11 py-5 h-11 text-sm shadow-inner"
-                    />
-                  </div>
-                </div>
-
-                {/* Treatment Select */}
-                <div className="space-y-2">
-                  <label htmlFor="bookingService" className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
-                    Select Treatment
-                  </label>
-                  <div className="relative">
-                    <Sparkles className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40 pointer-events-none" />
-                    <select
-                      id="bookingService"
-                      value={bookingService}
-                      onChange={(e) => setBookingService(e.target.value)}
-                      className="flex h-11 w-full rounded-full border border-brand-border bg-white pl-11 pr-4 py-2.5 text-xs sm:text-sm text-brand-charcoal/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary/50 shadow-inner appearance-none cursor-pointer"
-                    >
-                      {services.length > 0 ? (
-                        services.map((svc) => (
-                          <option key={svc.id} value={svc.id}>
-                            {svc.name} (${svc.price})
-                          </option>
-                        ))
-                      ) : (
-                        <>
-                          <option value="Therapeutic Massage">Therapeutic Massage ($120)</option>
-                          <option value="Rejuvenating Facial">Rejuvenating Facial ($145)</option>
-                          <option value="Wellness Consultation">Wellness Consultation ($95)</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Date selection */}
-                <div className="space-y-2">
-                  <label htmlFor="bookingDate" className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
-                    Preferred Date & Time
-                  </label>
-                  <div className="relative">
-                    <Calendar className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40" />
-                    <Input
-                      id="bookingDate"
-                      type="datetime-local"
-                      required
-                      value={bookingDate}
-                      onChange={(e) => setBookingDate(e.target.value)}
-                      className="bg-white border-brand-border text-brand-charcoal rounded-full pl-11 py-5 h-11 text-sm shadow-inner"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full text-xs uppercase tracking-[0.2em] bg-brand-primary hover:bg-brand-primary-hover text-white py-5 rounded-full mt-3 shadow-md font-semibold cursor-pointer"
-              >
-                Send Booking Request
-              </Button>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* AUTH MODAL WITH SHADCN DIALOG */}
-      <Dialog open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen}>
-        <DialogContent className="bg-brand-cream border border-brand-border/60 rounded-[2rem] p-6 sm:p-8 max-w-md w-full text-brand-charcoal animate-scale-in">
-          <DialogHeader className="text-center pb-2">
-            <span className="text-[10px] tracking-[0.25em] text-brand-primary font-bold uppercase block mb-1">
-              {authMode === "login" ? "WELCOME BACK" : "JOIN THE CLUB"}
-            </span>
-            <DialogTitle className="font-serif text-2xl sm:text-3xl text-brand-charcoal font-normal tracking-wide">
-              {authMode === "login" ? "Sign In" : "Create Account"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <form onSubmit={handleAuthSubmit} className="space-y-5 mt-2">
-            {authError && (
-              <div className="text-red-600 bg-red-50 border border-red-200 text-xs sm:text-sm rounded-xl p-3 text-center font-medium animate-fade-in">
-                {authError}
-              </div>
-            )}
-
-            <div className="space-y-4">
-              {authMode === "register" && (
-                <div className="space-y-2">
-                  <label className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <UserIcon className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40" />
-                    <Input
-                      type="text"
-                      placeholder="e.g. Eleanor Vance"
-                      required
-                      value={authName}
-                      onChange={(e) => setAuthName(e.target.value)}
-                      className="bg-white border-brand-border rounded-full pl-11 py-5 h-11 text-sm shadow-inner"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40" />
-                  <Input
-                    type="email"
-                    placeholder="e.g. eleanor@aura.com"
-                    required
-                    value={authEmail}
-                    onChange={(e) => setAuthEmail(e.target.value)}
-                    className="bg-white border-brand-border rounded-full pl-11 py-5 h-11 text-sm shadow-inner"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40" />
-                  <Input
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    value={authPassword}
-                    onChange={(e) => setAuthPassword(e.target.value)}
-                    className="bg-white border-brand-border rounded-full pl-11 py-5 h-11 text-sm shadow-inner"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full text-xs uppercase tracking-[0.2em] bg-brand-primary hover:bg-brand-primary-hover text-white py-5 rounded-full mt-3 shadow-md font-semibold cursor-pointer"
-            >
-              {authMode === "login" ? "Sign In" : "Sign Up"}
-            </Button>
-
-            <div className="text-center pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode(authMode === "login" ? "register" : "login");
-                  setAuthError("");
-                }}
-                className="text-xs text-brand-primary hover:underline font-sans font-bold cursor-pointer"
-              >
-                {authMode === "login"
-                  ? "Don't have an account? Sign Up"
-                  : "Already have an account? Sign In"}
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
 
     </div>
   );
