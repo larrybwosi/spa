@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { ScrymeService } from '../scryme/scryme.service';
 import { User, Role } from '@prisma/client';
@@ -50,7 +57,10 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     if (order.items && Array.isArray(order.items)) {
       for (const item of order.items) {
         const productId = item.variantId;
-        const product = await this.prisma.product.findUnique({ where: { id: productId } }).catch(() => null);
+        const product = await this.prisma.product
+          .findUnique({ where: { id: productId } })
+          .catch(() => null);
+
         mappedItems.push({
           id: item.id || `item-${productId}-${order.id}`,
           orderId: order.id,
@@ -59,7 +69,12 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
           price: item.unitPrice || 0,
           createdAt: new Date(order.createdAt || Date.now()),
           updatedAt: new Date(order.createdAt || Date.now()),
-          product: product || { id: productId, name: 'Unknown Product', price: item.unitPrice || 0, stock: 0 },
+          product: product || {
+            id: productId,
+            name: 'Unknown Product',
+            price: item.unitPrice || 0,
+            stock: 0,
+          },
         });
       }
     }
@@ -151,20 +166,31 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     return order;
   }
 
-  async create(user: User, dto: { clientId?: string; items: { productId: string; quantity: number }[] }) {
+  async create(
+    user: User,
+    dto: {
+      clientId?: string;
+      items: { productId: string; quantity: number }[];
+    },
+  ) {
     if (!dto.items || dto.items.length === 0) {
       throw new BadRequestException('Order must contain at least one item');
     }
 
     // Determine target client
-    const targetClientId = (user.role === Role.ADMIN || user.role === Role.STAFF) && dto.clientId
-      ? dto.clientId
-      : user.id;
+    const targetClientId =
+      (user.role === Role.ADMIN || user.role === Role.STAFF) && dto.clientId
+        ? dto.clientId
+        : user.id;
 
     // Verify client exists
-    const client = await this.prisma.user.findUnique({ where: { id: targetClientId } });
+    const client = await this.prisma.user.findUnique({
+      where: { id: targetClientId },
+    });
     if (!client) {
-      throw new NotFoundException(`Client user with ID ${targetClientId} not found`);
+      throw new NotFoundException(
+        `Client user with ID ${targetClientId} not found`,
+      );
     }
 
     // Validate and fetch items locally
@@ -177,7 +203,9 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         throw new BadRequestException('Quantity must be greater than 0');
       }
 
-      const product = await this.prisma.product.findUnique({ where: { id: item.productId } });
+      const product = await this.prisma.product.findUnique({
+        where: { id: item.productId },
+      });
       if (!product) {
         throw new NotFoundException(`Product with ID ${item.productId} not found`);
       }

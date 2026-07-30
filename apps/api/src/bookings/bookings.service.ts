@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { ScrymeService } from '../scryme/scryme.service';
 import { BookingStatus, User, Role } from '@prisma/client';
@@ -42,7 +49,8 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
   private async mapScrymeBooking(booking: any) {
     const clientId = booking.customerId;
     const serviceId = booking.serviceId;
-    const staffId = booking.staffIds && booking.staffIds.length > 0 ? booking.staffIds[0] : '';
+    const staffId =
+      booking.staffIds && booking.staffIds.length > 0 ? booking.staffIds[0] : '';
 
     const [client, service, staff] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: clientId } }).catch(() => null),
@@ -133,31 +141,52 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
     return booking;
   }
 
-  async create(user: User, dto: { clientId?: string; serviceId: string; staffId: string; dateTime: string }) {
+  async create(
+    user: User,
+    dto: {
+      clientId?: string;
+      serviceId: string;
+      staffId: string;
+      dateTime: string;
+    },
+  ) {
     // 1. Resolve client (if admin/staff, they can pass clientId, otherwise use current user's ID)
-    const targetClientId = (user.role === Role.ADMIN || user.role === Role.STAFF) && dto.clientId
-      ? dto.clientId
-      : user.id;
+    const targetClientId =
+      (user.role === Role.ADMIN || user.role === Role.STAFF) && dto.clientId
+        ? dto.clientId
+        : user.id;
 
     // 2. Validate client exists
-    const client = await this.prisma.user.findUnique({ where: { id: targetClientId } });
+    const client = await this.prisma.user.findUnique({
+      where: { id: targetClientId },
+    });
     if (!client) {
-      throw new NotFoundException(`Client user with ID ${targetClientId} not found`);
+      throw new NotFoundException(
+        `Client user with ID ${targetClientId} not found`,
+      );
     }
 
     // 3. Validate service exists
-    const service = await this.prisma.service.findUnique({ where: { id: dto.serviceId } });
+    const service = await this.prisma.service.findUnique({
+      where: { id: dto.serviceId },
+    });
     if (!service) {
       throw new NotFoundException(`Service with ID ${dto.serviceId} not found`);
     }
 
     // 4. Validate staff exists and has either ADMIN or STAFF role
-    const staff = await this.prisma.user.findUnique({ where: { id: dto.staffId } });
+    const staff = await this.prisma.user.findUnique({
+      where: { id: dto.staffId },
+    });
     if (!staff) {
-      throw new NotFoundException(`Staff user with ID ${dto.staffId} not found`);
+      throw new NotFoundException(
+        `Staff user with ID ${dto.staffId} not found`,
+      );
     }
     if (staff.role !== Role.STAFF && staff.role !== Role.ADMIN) {
-      throw new BadRequestException(`User ${staff.name} is not a valid staff member / therapist`);
+      throw new BadRequestException(
+        `User ${staff.name} is not a valid staff member / therapist`,
+      );
     }
 
     // 5. Check if booking date is in the future
@@ -222,8 +251,13 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
       if (status !== BookingStatus.CANCELLED) {
         throw new ForbiddenException('Clients can only cancel their booking');
       }
-      if (booking.status === BookingStatus.COMPLETED || booking.status === BookingStatus.CANCELLED) {
-        throw new BadRequestException(`Cannot cancel a booking that is already ${booking.status}`);
+      if (
+        booking.status === BookingStatus.COMPLETED ||
+        booking.status === BookingStatus.CANCELLED
+      ) {
+        throw new BadRequestException(
+          `Cannot cancel a booking that is already ${booking.status}`,
+        );
       }
     }
 
@@ -234,8 +268,10 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
       else if (status === BookingStatus.CONFIRMED) scrymeStatus = 'CONFIRMED';
       else if (status === BookingStatus.COMPLETED) scrymeStatus = 'COMPLETED';
 
-      await this.scrymeService.updateBookingStatus(id, { status: scrymeStatus });
-    } catch (error) {
+      await this.scrymeService.updateBookingStatus(id, {
+        status: scrymeStatus,
+      });
+    } catch {
       // Graceful fallback / logging since Scryme might not have this specific booking ID stored locally
     }
 

@@ -1,3 +1,5 @@
+# Runs Android CI tasks (ktlint check, unit tests, and build compilation)
+# conditionally on pull requests when files under apps/android/ change.
 name: Android CI
 
 on:
