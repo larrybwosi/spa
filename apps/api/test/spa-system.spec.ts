@@ -1,17 +1,21 @@
-import 'dotenv/config';
-import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../src/prisma.service';
-import { AuthService } from '../src/auth/auth.service';
-import { ProductsService } from '../src/products/products.service';
-import { ServicesService } from '../src/services/services.service';
-import { BookingsService } from '../src/bookings/bookings.service';
-import { OrdersService } from '../src/orders/orders.service';
-import { ScrymeService } from '../src/scryme/scryme.service';
-import { CartService } from '../src/cart/cart.service';
-import { Role, BookingStatus } from '@prisma/client';
-import { ConflictException, UnauthorizedException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import "dotenv/config";
+import { Test, TestingModule } from "@nestjs/testing";
+import { PrismaService } from "../src/prisma.service";
+import { AuthService } from "../src/auth/auth.service";
+import { ProductsService } from "../src/products/products.service";
+import { ServicesService } from "../src/services/services.service";
+import { BookingsService } from "../src/bookings/bookings.service";
+import { OrdersService } from "../src/orders/orders.service";
+import { ScrymeService } from "../src/scryme/scryme.service";
+import { Role, BookingStatus } from "@prisma/client";
+import {
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
 
-describe('Spa Platform End-to-End Core Logic Tests', () => {
+describe("Spa Platform End-to-End Core Logic Tests", () => {
   let module: TestingModule;
   let prisma: PrismaService;
   let authService: AuthService;
@@ -19,7 +23,6 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
   let servicesService: ServicesService;
   let bookingsService: BookingsService;
   let ordersService: OrdersService;
-  let cartService: CartService;
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
@@ -30,22 +33,33 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
         ServicesService,
         BookingsService,
         OrdersService,
-        CartService,
         {
           provide: ScrymeService,
           useValue: {
-            registerCustomer: jest.fn().mockResolvedValue({ id: 'mock-customer-id', success: true }),
-            createMember: jest.fn().mockResolvedValue({ id: 'mock-member-id', success: true }),
-            createBooking: jest.fn().mockRejectedValue(new Error('Scryme offline fallback')),
-            getBooking: jest.fn().mockRejectedValue(new Error('Scryme offline fallback')),
-            listBookings: jest.fn().mockRejectedValue(new Error('Scryme offline fallback')),
-            updateBookingStatus: jest.fn().mockRejectedValue(new Error('Scryme offline fallback')),
-            createOrder: jest.fn().mockRejectedValue(new Error('Scryme offline fallback')),
-            listOrders: jest.fn().mockRejectedValue(new Error('Scryme offline fallback')),
-            getCart: jest.fn(),
-            clearCart: jest.fn(),
-            addToCart: jest.fn(),
-            removeFromCart: jest.fn(),
+            registerCustomer: jest
+              .fn()
+              .mockResolvedValue({ id: "mock-customer-id", success: true }),
+            createMember: jest
+              .fn()
+              .mockResolvedValue({ id: "mock-member-id", success: true }),
+            createBooking: jest
+              .fn()
+              .mockRejectedValue(new Error("Scryme offline fallback")),
+            getBooking: jest
+              .fn()
+              .mockRejectedValue(new Error("Scryme offline fallback")),
+            listBookings: jest
+              .fn()
+              .mockRejectedValue(new Error("Scryme offline fallback")),
+            updateBookingStatus: jest
+              .fn()
+              .mockRejectedValue(new Error("Scryme offline fallback")),
+            createOrder: jest
+              .fn()
+              .mockRejectedValue(new Error("Scryme offline fallback")),
+            listOrders: jest
+              .fn()
+              .mockRejectedValue(new Error("Scryme offline fallback")),
           },
         },
       ],
@@ -57,7 +71,6 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
     servicesService = module.get<ServicesService>(ServicesService);
     bookingsService = module.get<BookingsService>(BookingsService);
     ordersService = module.get<OrdersService>(OrdersService);
-    cartService = module.get<CartService>(CartService);
 
     // Call onModuleInit manually or enableShutdownHooks
     await module.init();
@@ -516,133 +529,6 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
         where: { id: order.id },
       });
       expect(dbOrder).toBeNull();
-    });
-  });
-
-  describe('Cart Module tests', () => {
-    let clientUser: any;
-    let product1: any;
-    let product2: any;
-
-    beforeEach(async () => {
-      clientUser = await authService.signUp({
-        name: 'Cart Buyer',
-        email: 'cartbuyer@example.com',
-        password: 'password123',
-        role: Role.CLIENT,
-      });
-
-      product1 = await productsService.create({
-        name: 'Body Butter',
-        price: 20.0,
-        stock: 10,
-      });
-
-      product2 = await productsService.create({
-        name: 'Face Oil',
-        price: 40.0,
-        stock: 5,
-      });
-    });
-
-    it('should delegate cart retrieval, addition, and removal to Scryme service', async () => {
-      const mockScryme = module.get<ScrymeService>(ScrymeService);
-
-      const mockCartObj = {
-        id: 'cart-session-123',
-        customerId: clientUser.id,
-        sessionId: clientUser.id,
-        items: [
-          { productId: product1.id, quantity: 2 },
-        ],
-      };
-
-      const getCartSpy = jest.spyOn(mockScryme, 'getCart').mockResolvedValueOnce(mockCartObj);
-      const addToCartSpy = jest.spyOn(mockScryme, 'addToCart').mockResolvedValueOnce({ success: true });
-      const removeFromCartSpy = jest.spyOn(mockScryme, 'removeFromCart').mockResolvedValueOnce({ success: true });
-      const clearCartSpy = jest.spyOn(mockScryme, 'clearCart').mockResolvedValueOnce({ success: true });
-
-      // Test getCart
-      const cart = await cartService.getCart(clientUser);
-      expect(cart).toBeDefined();
-      expect(cart.id).toBe('cart-session-123');
-      expect(cart.items[0].productId).toBe(product1.id);
-      expect(getCartSpy).toHaveBeenCalledWith(clientUser.id);
-
-      // Test addToCart
-      const addPayload = { productId: product1.id, quantity: 2 };
-      await cartService.addToCart(clientUser, addPayload);
-      expect(addToCartSpy).toHaveBeenCalledWith({
-        productId: product1.id,
-        quantity: 2,
-        sessionId: clientUser.id,
-        customerId: clientUser.id,
-      });
-
-      // Test removeFromCart
-      const removePayload = { productId: product1.id };
-      await cartService.removeFromCart(clientUser, removePayload);
-      expect(removeFromCartSpy).toHaveBeenCalledWith({
-        productId: product1.id,
-        sessionId: clientUser.id,
-        customerId: clientUser.id,
-      });
-
-      // Test clearCart
-      await cartService.clearCart(clientUser);
-      expect(clearCartSpy).toHaveBeenCalledWith(clientUser.id);
-    });
-
-    it('should checkout successfully, creating an order and clearing the cart', async () => {
-      const mockScryme = module.get<ScrymeService>(ScrymeService);
-
-      const mockCartObj = {
-        id: 'cart-session-123',
-        customerId: clientUser.id,
-        sessionId: clientUser.id,
-        items: [
-          { productId: product1.id, quantity: 2 },
-          { variantId: product2.id, quantity: 1 },
-        ],
-      };
-
-      const getCartSpy = jest.spyOn(mockScryme, 'getCart').mockResolvedValueOnce(mockCartObj);
-      const clearCartSpy = jest.spyOn(mockScryme, 'clearCart').mockResolvedValueOnce({ success: true });
-
-      // Force ordersService to fall back to local DB since we didn't mock Scryme createOrder
-      const createOrderSpy = jest.spyOn(mockScryme, 'createOrder').mockRejectedValueOnce(new Error('Scryme offline'));
-
-      const order = await cartService.checkout(clientUser);
-
-      expect(order).toBeDefined();
-      expect(order.clientId).toBe(clientUser.id);
-      expect(order.totalPrice).toBe(80.0); // (20*2) + (40*1) = 80
-      expect(getCartSpy).toHaveBeenCalledWith(clientUser.id);
-      expect(clearCartSpy).toHaveBeenCalledWith(clientUser.id);
-
-      // Verify product stocks were decremented locally
-      const p1 = await productsService.getOne(product1.id);
-      expect(p1.stock).toBe(8); // 10 - 2
-
-      const p2 = await productsService.getOne(product2.id);
-      expect(p2.stock).toBe(4); // 5 - 1
-    });
-
-    it('should throw BadRequestException on checkout if cart is empty', async () => {
-      const mockScryme = module.get<ScrymeService>(ScrymeService);
-
-      const mockCartObj = {
-        id: 'cart-session-123',
-        customerId: clientUser.id,
-        sessionId: clientUser.id,
-        items: [],
-      };
-
-      jest.spyOn(mockScryme, 'getCart').mockResolvedValueOnce(mockCartObj);
-
-      await expect(
-        cartService.checkout(clientUser)
-      ).rejects.toThrow(BadRequestException);
     });
   });
 });

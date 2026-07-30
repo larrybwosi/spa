@@ -200,7 +200,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     // Validate and fetch items locally
     let totalPrice = 0;
     const scrymeItems = [];
-    const productsToMap: any[] = [];
+    const productsToMap = [];
 
     for (const item of dto.items) {
       if (item.quantity <= 0) {
@@ -271,10 +271,9 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         const orderItemsToCreate = [];
 
         for (const item of dto.items) {
-          const product = await tx.product.findUnique({ where: { id: item.productId } });
-          if (!product) {
-            throw new NotFoundException(`Product with ID ${item.productId} not found`);
-          }
+          const product = await tx.product.findUnique({
+            where: { id: item.productId },
+          });
           await tx.product.update({
             where: { id: product.id },
             data: {
