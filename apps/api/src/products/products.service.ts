@@ -102,12 +102,17 @@ export class ProductsService {
     return product;
   }
 
-  async create(dto: { name: string; description?: string; price: number; stock: number }) {
+  async create(dto: {
+    name: string;
+    description?: string;
+    price: number;
+    stock: number;
+  }) {
     if (dto.price < 0) {
-      throw new BadRequestException('Price cannot be negative');
+      throw new BadRequestException("Price cannot be negative");
     }
     if (dto.stock < 0) {
-      throw new BadRequestException('Stock cannot be negative');
+      throw new BadRequestException("Stock cannot be negative");
     }
 
     return this.prisma.product.create({
@@ -115,14 +120,22 @@ export class ProductsService {
     });
   }
 
-  async update(id: string, dto: { name?: string; description?: string; price?: number; stock?: number }) {
+  async update(
+    id: string,
+    dto: {
+      name?: string;
+      description?: string;
+      price?: number;
+      stock?: number;
+    },
+  ) {
     await this.getOne(id);
 
     if (dto.price !== undefined && dto.price < 0) {
-      throw new BadRequestException('Price cannot be negative');
+      throw new BadRequestException("Price cannot be negative");
     }
     if (dto.stock !== undefined && dto.stock < 0) {
-      throw new BadRequestException('Stock cannot be negative');
+      throw new BadRequestException("Stock cannot be negative");
     }
 
     return this.prisma.product.update({

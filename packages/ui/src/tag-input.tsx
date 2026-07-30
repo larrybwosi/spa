@@ -1,10 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { X, Plus } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Badge } from './badge';
-import { Button } from './button';
-import { Input } from './input';
 import { cn } from './utils';
 
 interface TagInputProps {
@@ -34,7 +32,7 @@ export function TagInput({ placeholder = 'Add tag...', tags, onChange, className
       e.preventDefault();
       addTag();
     } else if (e.key === 'Backspace' && !inputValue && tags.length > 0) {
-      removeTag(tags[tags.length - 1]);
+      removeTag(tags[tags.length - 1]!);
     }
   };
 

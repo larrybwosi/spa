@@ -25,7 +25,7 @@ describe("ScrymeController Unit Tests", () => {
   };
 
   const mockBetterAuthGuard = {
-    canActivate: jest.fn((context: ExecutionContext) => true),
+    canActivate: jest.fn(() => true),
   };
 
   beforeEach(async () => {
