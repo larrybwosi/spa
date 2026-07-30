@@ -302,4 +302,36 @@ export class ScrymeService {
   async updateOrderStatus(id: string, dto: { status: string }) {
     return this.request<any>("POST", `/v3/{orgSlug}/orders/${id}/status`, dto);
   }
+
+  // --- Cart ---
+
+  async getCart(sessionId: string) {
+    return this.request<any>("GET", `/v3/{orgSlug}/cart?sessionId=${encodeURIComponent(sessionId)}`);
+  }
+
+  async clearCart(sessionId: string) {
+    return this.request<any>("DELETE", `/v3/{orgSlug}/cart?sessionId=${encodeURIComponent(sessionId)}`);
+  }
+
+  async addToCart(dto: {
+    productId?: string;
+    variantId?: string;
+    serviceId?: string;
+    bookingDetails?: any;
+    quantity: number;
+    sessionId?: string;
+    customerId?: string;
+  }) {
+    return this.request<any>("POST", "/v3/{orgSlug}/cart/items", dto);
+  }
+
+  async removeFromCart(dto: {
+    productId?: string;
+    variantId?: string;
+    serviceId?: string;
+    sessionId?: string;
+    customerId?: string;
+  }) {
+    return this.request<any>("DELETE", "/v3/{orgSlug}/cart/items", dto);
+  }
 }
