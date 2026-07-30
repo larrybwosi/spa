@@ -6,14 +6,23 @@ import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { FALLBACK_PRODUCTS, Product, slugify } from "./product-data";
 import {
-  Menu,
   X,
+  Menu,
   Sparkles,
   ChevronRight,
   Search,
   SlidersHorizontal,
   Star
 } from "lucide-react";
+
+interface ApiProduct {
+  id: string;
+  name: string;
+  slug?: string;
+  price?: number;
+  stock?: number;
+  description?: string;
+}
 
 const InstagramIcon = () => (
   <svg
@@ -77,7 +86,7 @@ export default function ProductsPage() {
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           // Map backend products to include frontend details, or use if already detailed
-          const mapped: Product[] = data.map((apiProd: any) => {
+          const mapped: Product[] = data.map((apiProd: ApiProduct) => {
             const fallbackMatch = FALLBACK_PRODUCTS.find(
               (fp) => fp.id === apiProd.id || fp.name.toLowerCase() === apiProd.name.toLowerCase()
             );
@@ -416,14 +425,16 @@ export default function ProductsPage() {
                   </div>
 
                   {/* Title & Price */}
-                  <Link href={`/products/${product.slug}`} className="block flex-1 group-hover:text-brand-primary transition-colors">
-                    <h3 className="font-serif text-lg text-brand-charcoal font-medium line-clamp-1 mb-1 tracking-wide leading-tight">
-                      {product.name}
-                    </h3>
+                  <div className="block flex-1 group-hover:text-brand-primary transition-colors">
+                    <Link href={`/products/${product.slug}`} className="block">
+                      <h3 className="font-serif text-lg text-brand-charcoal font-medium line-clamp-1 mb-1 tracking-wide leading-tight">
+                        {product.name}
+                      </h3>
+                    </Link>
                     <p className="text-xs sm:text-sm text-brand-charcoal/60 font-sans font-light line-clamp-2 leading-relaxed mb-4">
                       {product.description}
                     </p>
-                  </Link>
+                  </div>
 
                   <div className="pt-4 border-t border-brand-border/40 flex items-center justify-between mt-auto">
                     <span className="font-serif text-base sm:text-lg text-brand-charcoal font-semibold">

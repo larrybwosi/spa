@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Button } from "@repo/ui/button";
 import { FALLBACK_PRODUCTS, Product, MOCK_REVIEWS, slugify } from "../product-data";
 import {
   Menu,
   X,
-  Sparkles,
   ChevronRight,
   Star,
   Plus,
@@ -20,6 +19,15 @@ import {
   ShoppingBag,
   ChevronDown
 } from "lucide-react";
+
+interface ApiProduct {
+  id: string;
+  name: string;
+  slug?: string;
+  price?: number;
+  stock?: number;
+  description?: string;
+}
 
 const InstagramIcon = () => (
   <svg
@@ -55,7 +63,6 @@ const FacebookIcon = () => (
 
 export default function ProductDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const slug = params?.slug as string;
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -92,7 +99,7 @@ export default function ProductDetailPage() {
       .then((data) => {
         if (Array.isArray(data)) {
           // Find matching products
-          const apiProd = data.find((p: any) => p.slug === slug || slugify(p.name) === slug);
+          const apiProd = data.find((p: ApiProduct) => p.slug === slug || slugify(p.name) === slug);
           if (apiProd) {
             const fallbackMatch = FALLBACK_PRODUCTS.find(
               (fp) => fp.id === apiProd.id || fp.name.toLowerCase() === apiProd.name.toLowerCase()
@@ -343,7 +350,7 @@ export default function ProductDetailPage() {
       </div>
 
       {/* BREADCRUMBS */}
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 text-[10px] sm:text-xs uppercase tracking-[0.15em] font-medium text-brand-charcoal/50 flex items-center gap-1.5">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 text-[10px] sm:text-xs uppercase tracking-[0.15em] font-medium text-brand-charcoal/50 flex items-center gap-1.5 font-sans">
         <Link href="/" className="hover:text-brand-primary transition-colors">Home</Link>
         <ChevronRight className="h-3 w-3" />
         <Link href="/products" className="hover:text-brand-primary transition-colors">Products</Link>
@@ -515,7 +522,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Quality Seals */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-brand-border/60">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-brand-border/60 font-sans">
               <div className="flex items-center gap-3">
                 <Truck className="h-5 w-5 text-brand-primary shrink-0" />
                 <div className="space-y-0.5">
@@ -560,7 +567,7 @@ export default function ProductDetailPage() {
                 <div key={review.id} className="pt-8 first:pt-0">
                   <div className="flex items-center justify-between gap-4 mb-3">
                     <div className="space-y-1">
-                      <h4 className="font-serif text-sm sm:text-base text-brand-charcoal font-medium">
+                      <h4 className="font-serif text-sm sm:text-base text-brand-charcoal font-medium font-semibold">
                         {review.author}
                       </h4>
                       <span className="text-[10px] text-brand-charcoal/40 font-light block">
@@ -592,7 +599,7 @@ export default function ProductDetailPage() {
       {addedToCartToast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3.5 bg-brand-charcoal text-white border border-white/10 px-5 py-4 rounded-xl shadow-2xl animate-scale-in max-w-sm">
           <CheckCircle className="h-5 w-5 text-brand-sage shrink-0" />
-          <div className="flex-1 space-y-0.5">
+          <div className="flex-1 space-y-0.5 font-sans">
             <p className="text-xs font-sans font-bold uppercase tracking-wider text-brand-cream">
               Added to Cart
             </p>
@@ -610,7 +617,7 @@ export default function ProductDetailPage() {
       )}
 
       {/* FOOTER */}
-      <footer className="bg-brand-card-cream/60 border-t border-brand-border/60 pt-20 pb-12 px-4 sm:px-6 lg:px-8">
+      <footer className="bg-brand-card-cream/60 border-t border-brand-border/60 pt-20 pb-12 px-4 sm:px-6 lg:px-8 font-sans">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-16 mb-20">
             <div className="lg:col-span-4 space-y-6">

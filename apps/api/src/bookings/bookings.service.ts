@@ -5,10 +5,10 @@ import {
   ForbiddenException,
   OnModuleInit,
   OnModuleDestroy,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { ScrymeService } from '../scryme/scryme.service';
-import { BookingStatus, User, Role } from '@prisma/client';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import { ScrymeService } from "../scryme/scryme.service";
+import { BookingStatus, User, Role } from "@prisma/client";
 
 @Injectable()
 export class BookingsService implements OnModuleInit, OnModuleDestroy {
@@ -22,7 +22,7 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     this.queueInterval = setInterval(() => this.processQueue(), 30000);
-    if (this.queueInterval && typeof this.queueInterval.unref === 'function') {
+    if (this.queueInterval && typeof this.queueInterval.unref === "function") {
       this.queueInterval.unref();
     }
   }
@@ -50,11 +50,17 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
     const clientId = booking.customerId;
     const serviceId = booking.serviceId;
     const staffId =
-      booking.staffIds && booking.staffIds.length > 0 ? booking.staffIds[0] : '';
+      booking.staffIds && booking.staffIds.length > 0
+        ? booking.staffIds[0]
+        : "";
 
     const [client, service, staff] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: clientId } }).catch(() => null),
-      this.prisma.service.findUnique({ where: { id: serviceId } }).catch(() => null),
+      this.prisma.user
+        .findUnique({ where: { id: clientId } })
+        .catch(() => null),
+      this.prisma.service
+        .findUnique({ where: { id: serviceId } })
+        .catch(() => null),
       this.prisma.user.findUnique({ where: { id: staffId } }).catch(() => null),
     ]);
 
@@ -67,9 +73,14 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
       status: booking.status as BookingStatus,
       createdAt: new Date(booking.createdAt || Date.now()),
       updatedAt: new Date(booking.updatedAt || Date.now()),
-      client: client || { id: clientId, name: 'Unknown Client', email: '' },
-      service: service || { id: serviceId, name: 'Unknown Service', price: 0, duration: 60 },
-      staff: staff || { id: staffId, name: 'Unknown Staff', email: '' },
+      client: client || { id: clientId, name: "Unknown Client", email: "" },
+      service: service || {
+        id: serviceId,
+        name: "Unknown Service",
+        price: 0,
+        duration: 60,
+      },
+      staff: staff || { id: staffId, name: "Unknown Staff", email: "" },
     };
   }
 
@@ -81,7 +92,9 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
       );
 
       if (user.role === Role.ADMIN) {
-        return mappedBookings.sort((a, b) => b.dateTime.getTime() - a.dateTime.getTime());
+        return mappedBookings.sort(
+          (a, b) => b.dateTime.getTime() - a.dateTime.getTime(),
+        );
       } else if (user.role === Role.STAFF) {
         return mappedBookings
           .filter((b) => b.staffId === user.id)
@@ -95,20 +108,20 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
       if (user.role === Role.ADMIN) {
         return this.prisma.booking.findMany({
           include: { client: true, service: true, staff: true },
-          orderBy: { dateTime: 'desc' },
+          orderBy: { dateTime: "desc" },
         });
       } else if (user.role === Role.STAFF) {
         return this.prisma.booking.findMany({
           where: { staffId: user.id },
           include: { client: true, service: true, staff: true },
-          orderBy: { dateTime: 'desc' },
+          orderBy: { dateTime: "desc" },
         });
       } else {
         // CLIENT
         return this.prisma.booking.findMany({
           where: { clientId: user.id },
           include: { client: true, service: true, staff: true },
-          orderBy: { dateTime: 'desc' },
+          orderBy: { dateTime: "desc" },
         });
       }
     }
@@ -132,10 +145,10 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
 
     // Authorization checks
     if (user.role === Role.CLIENT && booking.clientId !== user.id) {
-      throw new ForbiddenException('You cannot access this booking');
+      throw new ForbiddenException("You cannot access this booking");
     }
     if (user.role === Role.STAFF && booking.staffId !== user.id) {
-      throw new ForbiddenException('You cannot access this booking');
+      throw new ForbiddenException("You cannot access this booking");
     }
 
     return booking;
@@ -192,10 +205,10 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
     // 5. Check if booking date is in the future
     const bookingDateTime = new Date(dto.dateTime);
     if (isNaN(bookingDateTime.getTime())) {
-      throw new BadRequestException('Invalid date/time format');
+      throw new BadRequestException("Invalid date/time format");
     }
     if (bookingDateTime < new Date()) {
-      throw new BadRequestException('Booking date/time must be in the future');
+      throw new BadRequestException("Booking date/time must be in the future");
     }
 
     const payload = {
@@ -209,7 +222,7 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
     try {
       const scrymeBooking = await this.scrymeService.createBooking(payload);
       return {
-        id: scrymeBooking.id || 'scryme-booking-id',
+        id: scrymeBooking.id || "scryme-booking-id",
         clientId: targetClientId,
         serviceId: dto.serviceId,
         staffId: dto.staffId,
@@ -249,7 +262,7 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
     // Clients can only cancel their booking
     if (user.role === Role.CLIENT) {
       if (status !== BookingStatus.CANCELLED) {
-        throw new ForbiddenException('Clients can only cancel their booking');
+        throw new ForbiddenException("Clients can only cancel their booking");
       }
       if (
         booking.status === BookingStatus.COMPLETED ||
@@ -263,10 +276,10 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
 
     // Delegate status update to Scryme if matching status change
     try {
-      let scrymeStatus = 'PENDING';
-      if (status === BookingStatus.CANCELLED) scrymeStatus = 'CANCELLED';
-      else if (status === BookingStatus.CONFIRMED) scrymeStatus = 'CONFIRMED';
-      else if (status === BookingStatus.COMPLETED) scrymeStatus = 'COMPLETED';
+      let scrymeStatus = "PENDING";
+      if (status === BookingStatus.CANCELLED) scrymeStatus = "CANCELLED";
+      else if (status === BookingStatus.CONFIRMED) scrymeStatus = "CONFIRMED";
+      else if (status === BookingStatus.COMPLETED) scrymeStatus = "COMPLETED";
 
       await this.scrymeService.updateBookingStatus(id, {
         status: scrymeStatus,
@@ -275,7 +288,9 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
       // Graceful fallback / logging since Scryme might not have this specific booking ID stored locally
     }
 
-    const localBookingExists = await this.prisma.booking.findUnique({ where: { id } });
+    const localBookingExists = await this.prisma.booking.findUnique({
+      where: { id },
+    });
     if (localBookingExists) {
       return this.prisma.booking.update({
         where: { id },
