@@ -117,7 +117,9 @@ export class ServicesService {
         if (foundFresh) {
           return foundFresh;
         }
-      } catch {}
+      } catch {
+        // Ignored reading fresh services fallback
+      }
       throw new NotFoundException(`Service with ID ${id} not found`);
     }
     return service;

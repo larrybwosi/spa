@@ -3,10 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@repo/ui/button";
-import { Card } from "@repo/ui/card";
 import { FALLBACK_SERVICES, ServiceDetail } from "./services-data";
 import {
-  ArrowRight,
   Menu,
   X,
   ChevronRight,
@@ -82,7 +80,7 @@ export default function ServicesPage() {
     setUser(null);
   };
 
-  // Group services by category for our alternating layout
+  // Group services by category
   const categories = ["Massage Therapy", "Skin Care", "Holistic Wellness"];
 
   // Helper to map our fallback or API list dynamically
@@ -233,91 +231,72 @@ export default function ServicesPage() {
         </p>
       </section>
 
-      {/* ALTERNATING CATEGORIES OF OFFERINGS */}
-      <section className="pb-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-28 md:space-y-40">
-        {categories.map((category, catIdx) => {
-          const isImageLeft = catIdx % 2 === 0;
+      {/* CATEGORIES OF OFFERINGS */}
+      <section className="pb-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-20">
+        {categories.map((category) => {
           const servicesInCategory = getServicesByCategory(category);
-          const firstServiceImage = servicesInCategory[0]?.image || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=1000";
 
           return (
-            <div
-              key={category}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-start"
-            >
-              {/* IMAGE COLUMN (Responsive: image top in mobile, alternating on desktop) */}
-              <div
-                className={`lg:col-span-5 relative aspect-3/4 rounded-2xl overflow-hidden shadow-sm h-[380px] sm:h-[480px] lg:h-[620px] w-full ${
-                  isImageLeft ? "lg:order-1" : "lg:order-2"
-                }`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={firstServiceImage}
-                  alt={category}
-                  className="absolute inset-0 w-full h-full object-cover object-center scale-101 hover:scale-104 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-brand-charcoal/5"></div>
+            <div key={category} className="space-y-10">
+              {/* Category Header */}
+              <div className="border-b border-brand-border/60 pb-6 max-w-3xl">
+                <span className="text-xs tracking-[0.25em] font-sans text-brand-primary uppercase font-bold block mb-2">
+                  Rituals
+                </span>
+                <h2 className="text-3xl sm:text-4xl font-serif text-brand-charcoal tracking-wide mb-3">
+                  {category}
+                </h2>
+                <p className="text-xs sm:text-sm text-brand-charcoal/65 font-sans font-light leading-relaxed">
+                  {category === "Massage Therapy" &&
+                    "Release tension and restore vitality through our expertly crafted massage therapies, designed to soothe both mind and body."}
+                  {category === "Skin Care" &&
+                    "Reveal your natural luminosity with our bespoke facial treatments, utilizing premium botanical ingredients and advanced techniques."}
+                  {category === "Holistic Wellness" &&
+                    "Integrative therapies aimed at aligning your energy and promoting comprehensive wellbeing from within."}
+                </p>
               </div>
 
-              {/* DETAILS / SERVICE LIST COLUMN */}
-              <div
-                className={`lg:col-span-7 space-y-8 ${
-                  isImageLeft ? "lg:order-2" : "lg:order-1"
-                }`}
-              >
-                <div className="space-y-3.5">
-                  <h2 className="text-3xl sm:text-4xl font-serif text-brand-charcoal tracking-wide">
-                    {category}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-brand-charcoal/65 font-sans font-light leading-relaxed max-w-xl">
-                    {category === "Massage Therapy" &&
-                      "Release tension and restore vitality through our expertly crafted massage therapies, designed to soothe both mind and body."}
-                    {category === "Skin Care" &&
-                      "Reveal your natural luminosity with our bespoke facial treatments, utilizing premium botanical ingredients and advanced techniques."}
-                    {category === "Holistic Wellness" &&
-                      "Integrative therapies aimed at aligning your energy and promoting comprehensive wellbeing from within."}
-                  </p>
-                </div>
+              {/* Services Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {servicesInCategory.map((service) => (
+                  <Link
+                    key={service.id}
+                    href={`/services/${service.id}`}
+                    className="group flex flex-col h-full bg-white rounded-xl overflow-hidden shadow-xs hover:shadow-md border border-brand-border/40 hover:border-brand-primary/20 transition-all duration-300"
+                  >
+                    {/* Service Image */}
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-brand-cream/50">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={service.image}
+                        alt={service.name}
+                        className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-brand-charcoal/5 group-hover:bg-transparent transition-colors duration-300"></div>
+                    </div>
 
-                {/* Vertical list of beautiful cards */}
-                <div className="space-y-5">
-                  {servicesInCategory.map((service) => (
-                    <Card
-                      key={service.id}
-                      className="bg-[#faf6f0] border border-brand-border/50 hover:border-brand-primary/20 p-6 rounded-xl shadow-xs transition-all duration-300 hover:scale-[1.005] hover:shadow-sm"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                        <div className="space-y-1">
-                          <h3 className="text-lg sm:text-xl font-serif text-brand-charcoal hover:text-brand-primary transition-colors font-medium">
-                            <Link href={`/services/${service.id}`}>{service.name}</Link>
-                          </h3>
-                          <div className="flex items-center gap-2 text-[10px] tracking-wider text-brand-charcoal/50 uppercase font-sans font-bold">
-                            <span>{service.duration} Min</span>
-                            <span>•</span>
-                            <span>
-                              {service.priceOptions
-                                ? service.priceOptions.map((o) => `$${o.price}`).join(" / ")
-                                : `$${service.price}`}
-                            </span>
-                          </div>
-                        </div>
+                    {/* Card Content */}
+                    <div className="flex flex-col flex-1 p-6 space-y-3">
+                      <span className="text-[10px] tracking-[0.2em] font-sans uppercase font-bold text-brand-primary/80">
+                        {service.category}
+                      </span>
 
-                        <Link
-                          href={`/booking?service=${service.id}`}
-                          className="text-[10px] sm:text-xs uppercase tracking-[0.15em] font-sans font-bold text-brand-charcoal hover:text-brand-primary inline-flex items-center gap-1.5 self-start sm:self-center shrink-0 group"
-                        >
-                          <span>Book</span>
-                          <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
-                        </Link>
-                      </div>
+                      <h3 className="text-xl font-serif text-brand-charcoal group-hover:text-brand-primary transition-colors duration-300 leading-tight font-medium">
+                        {service.name}
+                      </h3>
 
-                      <p className="text-xs sm:text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed">
+                      <p className="text-xs sm:text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed flex-1 line-clamp-3">
                         {service.description}
                       </p>
-                    </Card>
-                  ))}
-                </div>
+
+                      {/* View More Button */}
+                      <div className="pt-4 flex items-center gap-1 text-[10px] sm:text-xs uppercase tracking-[0.15em] font-sans font-bold text-brand-charcoal/80 group-hover:text-brand-primary transition-colors duration-300">
+                        <span>View Details</span>
+                        <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                      </div>
+                    </div>
+                  </Link>
+                ))}
               </div>
             </div>
           );
