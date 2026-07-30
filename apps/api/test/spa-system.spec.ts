@@ -6,6 +6,7 @@ import { ProductsService } from '../src/products/products.service';
 import { ServicesService } from '../src/services/services.service';
 import { BookingsService } from '../src/bookings/bookings.service';
 import { OrdersService } from '../src/orders/orders.service';
+import { ScrymeService } from '../src/scryme/scryme.service';
 import { Role, BookingStatus } from '@prisma/client';
 import { ConflictException, UnauthorizedException, BadRequestException, ForbiddenException } from '@nestjs/common';
 
@@ -27,6 +28,15 @@ describe('Spa Platform End-to-End Core Logic Tests', () => {
         ServicesService,
         BookingsService,
         OrdersService,
+        {
+          provide: ScrymeService,
+          useValue: {
+            registerCustomer: jest.fn().mockResolvedValue({ id: 'mock-customer-id', success: true }),
+            createMember: jest.fn().mockResolvedValue({ id: 'mock-member-id', success: true }),
+            createBooking: jest.fn().mockResolvedValue({ id: 'mock-booking-id', success: true }),
+            updateBookingStatus: jest.fn().mockResolvedValue({ success: true }),
+          },
+        },
       ],
     }).compile();
 

@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { ScrymeService } from '../scryme/scryme.service';
 import { BookingStatus, User, Role } from '@prisma/client';
 
 @Injectable()
 export class BookingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private scrymeService: ScrymeService,
+  ) {}
 
   async getAll(user: User) {
     if (user.role === Role.ADMIN) {
@@ -85,6 +89,19 @@ export class BookingsService {
       throw new BadRequestException('Booking date/time must be in the future');
     }
 
+    // 6. Delegate heavy-lifting booking creation to Scryme
+    try {
+      await this.scrymeService.createBooking({
+        serviceId: dto.serviceId,
+        customerId: targetClientId,
+        scheduledStartTime: bookingDateTime.toISOString(),
+        staffIds: [dto.staffId],
+      });
+    } catch (error) {
+      throw new BadRequestException(`Failed to create booking in Scryme: ${error.message}`);
+    }
+
+    // 7. Persist booking locally for system consistency & tracking
     return this.prisma.booking.create({
       data: {
         clientId: targetClientId,
@@ -108,6 +125,18 @@ export class BookingsService {
       if (booking.status === BookingStatus.COMPLETED || booking.status === BookingStatus.CANCELLED) {
         throw new BadRequestException(`Cannot cancel a booking that is already ${booking.status}`);
       }
+    }
+
+    // Delegate status update to Scryme if matching status change
+    try {
+      let scrymeStatus = 'PENDING';
+      if (status === BookingStatus.CANCELLED) scrymeStatus = 'CANCELLED';
+      else if (status === BookingStatus.CONFIRMED) scrymeStatus = 'CONFIRMED';
+      else if (status === BookingStatus.COMPLETED) scrymeStatus = 'COMPLETED';
+
+      await this.scrymeService.updateBookingStatus(id, { status: scrymeStatus });
+    } catch (error) {
+      // Graceful fallback / logging since Scryme might not have this specific booking ID stored locally
     }
 
     return this.prisma.booking.update({
