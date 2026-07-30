@@ -1,14 +1,19 @@
 import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { ScrymeService } from '../scryme/scryme.service';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private scrymeService: ScrymeService,
+  ) {}
 
   /**
    * Standard signup endpoint. Creates a User and associated Password Account in database.
+   * Delegates the actual customer/member registration heavy-lifting to Scryme API.
    */
   async signUp(dto: { name: string; email: string; password?: string; role?: 'ADMIN' | 'STAFF' | 'CLIENT' }) {
     const existing = await this.prisma.user.findUnique({
@@ -19,12 +24,40 @@ export class AuthService {
     }
 
     const hashedPassword = dto.password ? await bcrypt.hash(dto.password, 10) : null;
+    const resolvedRole = dto.role || 'CLIENT';
 
+    // 1. Heavy lifting on Scryme side
+    try {
+      if (resolvedRole === 'STAFF') {
+        await this.scrymeService.createMember({
+          name: dto.name,
+          email: dto.email.toLowerCase(),
+          role: 'EMPLOYEE',
+        });
+      } else if (resolvedRole === 'ADMIN') {
+        await this.scrymeService.createMember({
+          name: dto.name,
+          email: dto.email.toLowerCase(),
+          role: 'ADMIN',
+        });
+      } else {
+        // CLIENT
+        await this.scrymeService.registerCustomer({
+          name: dto.name,
+          email: dto.email.toLowerCase(),
+        });
+      }
+    } catch (error) {
+      // Log and propagate/handle Scryme errors to fulfill requirements
+      throw new BadRequestException(`Failed to register user in Scryme: ${error.message}`);
+    }
+
+    // 2. Local fallback persistence to allow standard app session management and local DB relations
     const user = await this.prisma.user.create({
       data: {
         name: dto.name,
         email: dto.email.toLowerCase(),
-        role: dto.role || 'CLIENT',
+        role: resolvedRole,
         accounts: dto.password
           ? {
               create: {
