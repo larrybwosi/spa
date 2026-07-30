@@ -36,16 +36,14 @@ describe("Spa Platform End-to-End Core Logic Tests", () => {
         {
           provide: ScrymeService,
           useValue: {
-            registerCustomer: jest
-              .fn()
-              .mockResolvedValue({ id: "mock-customer-id", success: true }),
-            createMember: jest
-              .fn()
-              .mockResolvedValue({ id: "mock-member-id", success: true }),
-            createBooking: jest
-              .fn()
-              .mockResolvedValue({ id: "mock-booking-id", success: true }),
-            updateBookingStatus: jest.fn().mockResolvedValue({ success: true }),
+            registerCustomer: jest.fn().mockResolvedValue({ id: 'mock-customer-id', success: true }),
+            createMember: jest.fn().mockResolvedValue({ id: 'mock-member-id', success: true }),
+            createBooking: jest.fn().mockRejectedValue(new Error('Scryme offline fallback')),
+            getBooking: jest.fn().mockRejectedValue(new Error('Scryme offline fallback')),
+            listBookings: jest.fn().mockRejectedValue(new Error('Scryme offline fallback')),
+            updateBookingStatus: jest.fn().mockRejectedValue(new Error('Scryme offline fallback')),
+            createOrder: jest.fn().mockRejectedValue(new Error('Scryme offline fallback')),
+            listOrders: jest.fn().mockRejectedValue(new Error('Scryme offline fallback')),
           },
         },
       ],
@@ -395,6 +393,32 @@ describe("Spa Platform End-to-End Core Logic Tests", () => {
       );
       expect(confirmedBooking.status).toBe(BookingStatus.CONFIRMED);
     });
+
+    it('should handle remote-only booking when Scryme is online (happy path)', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const mockScryme = module.get<ScrymeService>(ScrymeService);
+      jest.spyOn(mockScryme, 'createBooking').mockResolvedValueOnce({
+        id: 'remote-booking-999',
+        status: 'PENDING',
+      });
+
+      const booking = await bookingsService.create(clientUser, {
+        serviceId: service.id,
+        staffId: staffUser.id,
+        dateTime: tomorrow.toISOString(),
+      });
+
+      expect(booking).toBeDefined();
+      expect(booking.id).toBe('remote-booking-999');
+      expect(booking.clientId).toBe(clientUser.id);
+      expect(booking.status).toBe(BookingStatus.PENDING);
+
+      // Verify it was NOT persisted to local DB
+      const dbBooking = await prisma.booking.findUnique({ where: { id: booking.id } });
+      expect(dbBooking).toBeNull();
+    });
   });
 
   describe("Orders and Inventory Module tests", () => {
@@ -455,6 +479,36 @@ describe("Spa Platform End-to-End Core Logic Tests", () => {
       // Ensure stock was not decremented due to atomic transactional rollback
       const p2 = await productsService.getOne(product2.id);
       expect(p2.stock).toBe(5);
+    });
+
+    it('should handle remote-only order when Scryme is online (happy path)', async () => {
+      const mockScryme = module.get<ScrymeService>(ScrymeService);
+      jest.spyOn(mockScryme, 'createOrder').mockResolvedValueOnce({
+        id: 'remote-order-888',
+        status: 'PENDING',
+        totalAmount: 45.0,
+        createdAt: new Date().toISOString(),
+      });
+
+      const order = await ordersService.create(clientUser, {
+        items: [
+          { productId: product1.id, quantity: 1 },
+          { productId: product2.id, quantity: 1 },
+        ],
+      });
+
+      expect(order).toBeDefined();
+      expect(order.id).toBe('remote-order-888');
+      expect(order.clientId).toBe(clientUser.id);
+      expect(order.totalPrice).toBe(45.0); // 30 + 15 = 45
+
+      // Verify product stocks were NOT decremented since we did not persist locally
+      const p1 = await productsService.getOne(product1.id);
+      expect(p1.stock).toBe(10); // Still 10
+
+      // Verify order was NOT persisted to local DB
+      const dbOrder = await prisma.order.findUnique({ where: { id: order.id } });
+      expect(dbOrder).toBeNull();
     });
   });
 });
