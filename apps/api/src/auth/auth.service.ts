@@ -1,8 +1,13 @@
-import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { ScrymeService } from '../scryme/scryme.service';
-import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  ConflictException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import { ScrymeService } from "../scryme/scryme.service";
+import * as bcrypt from "bcrypt";
+import { randomBytes } from "crypto";
 
 @Injectable()
 export class AuthService {
@@ -15,30 +20,37 @@ export class AuthService {
    * Standard signup endpoint. Creates a User and associated Password Account in database.
    * Delegates the actual customer/member registration heavy-lifting to Scryme API.
    */
-  async signUp(dto: { name: string; email: string; password?: string; role?: 'ADMIN' | 'STAFF' | 'CLIENT' }) {
+  async signUp(dto: {
+    name: string;
+    email: string;
+    password?: string;
+    role?: "ADMIN" | "STAFF" | "CLIENT";
+  }) {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email.toLowerCase() },
     });
     if (existing) {
-      throw new ConflictException('A user with this email already exists');
+      throw new ConflictException("A user with this email already exists");
     }
 
-    const hashedPassword = dto.password ? await bcrypt.hash(dto.password, 10) : null;
-    const resolvedRole = dto.role || 'CLIENT';
+    const hashedPassword = dto.password
+      ? await bcrypt.hash(dto.password, 10)
+      : null;
+    const resolvedRole = dto.role || "CLIENT";
 
     // 1. Heavy lifting on Scryme side
     try {
-      if (resolvedRole === 'STAFF') {
+      if (resolvedRole === "STAFF") {
         await this.scrymeService.createMember({
           name: dto.name,
           email: dto.email.toLowerCase(),
-          role: 'EMPLOYEE',
+          role: "EMPLOYEE",
         });
-      } else if (resolvedRole === 'ADMIN') {
+      } else if (resolvedRole === "ADMIN") {
         await this.scrymeService.createMember({
           name: dto.name,
           email: dto.email.toLowerCase(),
-          role: 'ADMIN',
+          role: "ADMIN",
         });
       } else {
         // CLIENT
@@ -49,7 +61,9 @@ export class AuthService {
       }
     } catch (error) {
       // Log and propagate/handle Scryme errors to fulfill requirements
-      throw new BadRequestException(`Failed to register user in Scryme: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to register user in Scryme: ${error.message}`,
+      );
     }
 
     // 2. Local fallback persistence to allow standard app session management and local DB relations
@@ -62,7 +76,7 @@ export class AuthService {
           ? {
               create: {
                 accountId: dto.email.toLowerCase(),
-                providerId: 'credential',
+                providerId: "credential",
                 password: hashedPassword,
               },
             }
@@ -83,23 +97,28 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException("Invalid email or password");
     }
 
     if (dto.password) {
-      const passwordAccount = user.accounts.find((acc) => acc.providerId === 'credential');
+      const passwordAccount = user.accounts.find(
+        (acc) => acc.providerId === "credential",
+      );
       if (!passwordAccount || !passwordAccount.password) {
-        throw new UnauthorizedException('Invalid email or password');
+        throw new UnauthorizedException("Invalid email or password");
       }
 
-      const isMatch = await bcrypt.compare(dto.password, passwordAccount.password);
+      const isMatch = await bcrypt.compare(
+        dto.password,
+        passwordAccount.password,
+      );
       if (!isMatch) {
-        throw new UnauthorizedException('Invalid email or password');
+        throw new UnauthorizedException("Invalid email or password");
       }
     }
 
     // Create a new session matching Better Auth specs
-    const token = randomBytes(32).toString('hex');
+    const token = randomBytes(32).toString("hex");
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days session lifetime
 
@@ -141,7 +160,9 @@ export class AuthService {
 
     if (new Date() > session.expiresAt) {
       // Clean up expired session
-      await this.prisma.session.delete({ where: { id: session.id } }).catch(() => {});
+      await this.prisma.session
+        .delete({ where: { id: session.id } })
+        .catch(() => {});
       return null;
     }
 

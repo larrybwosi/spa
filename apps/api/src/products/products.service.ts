@@ -1,5 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
 
 @Injectable()
 export class ProductsService {
@@ -7,7 +11,7 @@ export class ProductsService {
 
   async getAll() {
     return this.prisma.product.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -19,12 +23,17 @@ export class ProductsService {
     return product;
   }
 
-  async create(dto: { name: string; description?: string; price: number; stock: number }) {
+  async create(dto: {
+    name: string;
+    description?: string;
+    price: number;
+    stock: number;
+  }) {
     if (dto.price < 0) {
-      throw new BadRequestException('Price cannot be negative');
+      throw new BadRequestException("Price cannot be negative");
     }
     if (dto.stock < 0) {
-      throw new BadRequestException('Stock cannot be negative');
+      throw new BadRequestException("Stock cannot be negative");
     }
 
     return this.prisma.product.create({
@@ -32,14 +41,22 @@ export class ProductsService {
     });
   }
 
-  async update(id: string, dto: { name?: string; description?: string; price?: number; stock?: number }) {
+  async update(
+    id: string,
+    dto: {
+      name?: string;
+      description?: string;
+      price?: number;
+      stock?: number;
+    },
+  ) {
     await this.getOne(id);
 
     if (dto.price !== undefined && dto.price < 0) {
-      throw new BadRequestException('Price cannot be negative');
+      throw new BadRequestException("Price cannot be negative");
     }
     if (dto.stock !== undefined && dto.stock < 0) {
-      throw new BadRequestException('Stock cannot be negative');
+      throw new BadRequestException("Stock cannot be negative");
     }
 
     return this.prisma.product.update({

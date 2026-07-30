@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { User, Role } from '@prisma/client';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import { User, Role } from "@prisma/client";
 
 @Injectable()
 export class OrdersService {
@@ -15,7 +20,7 @@ export class OrdersService {
             include: { product: true },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
     } else {
       // CLIENT
@@ -27,7 +32,7 @@ export class OrdersService {
             include: { product: true },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
     }
   }
@@ -48,26 +53,37 @@ export class OrdersService {
     }
 
     if (user.role === Role.CLIENT && order.clientId !== user.id) {
-      throw new ForbiddenException('You cannot access this order');
+      throw new ForbiddenException("You cannot access this order");
     }
 
     return order;
   }
 
-  async create(user: User, dto: { clientId?: string; items: { productId: string; quantity: number }[] }) {
+  async create(
+    user: User,
+    dto: {
+      clientId?: string;
+      items: { productId: string; quantity: number }[];
+    },
+  ) {
     if (!dto.items || dto.items.length === 0) {
-      throw new BadRequestException('Order must contain at least one item');
+      throw new BadRequestException("Order must contain at least one item");
     }
 
     // Determine target client
-    const targetClientId = (user.role === Role.ADMIN || user.role === Role.STAFF) && dto.clientId
-      ? dto.clientId
-      : user.id;
+    const targetClientId =
+      (user.role === Role.ADMIN || user.role === Role.STAFF) && dto.clientId
+        ? dto.clientId
+        : user.id;
 
     // Verify client exists
-    const client = await this.prisma.user.findUnique({ where: { id: targetClientId } });
+    const client = await this.prisma.user.findUnique({
+      where: { id: targetClientId },
+    });
     if (!client) {
-      throw new NotFoundException(`Client user with ID ${targetClientId} not found`);
+      throw new NotFoundException(
+        `Client user with ID ${targetClientId} not found`,
+      );
     }
 
     // Run order placement inside a database transaction to ensure safety and atomic updates
@@ -77,12 +93,16 @@ export class OrdersService {
 
       for (const item of dto.items) {
         if (item.quantity <= 0) {
-          throw new BadRequestException('Quantity must be greater than 0');
+          throw new BadRequestException("Quantity must be greater than 0");
         }
 
-        const product = await tx.product.findUnique({ where: { id: item.productId } });
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+        });
         if (!product) {
-          throw new NotFoundException(`Product with ID ${item.productId} not found`);
+          throw new NotFoundException(
+            `Product with ID ${item.productId} not found`,
+          );
         }
 
         if (product.stock < item.quantity) {

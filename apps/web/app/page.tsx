@@ -9,7 +9,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@repo/ui/dialog";
 import {
   MapPin,
@@ -85,6 +84,7 @@ export default function Home() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [services, setServices] = useState<any[]>([]);
 
   // Fetch session on load
@@ -159,6 +159,7 @@ export default function Home() {
         setAuthPassword("");
         alert("Registration successful! Please sign in with your credentials.");
       }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setAuthError(err.message || "An error occurred");
     }
@@ -216,6 +217,7 @@ export default function Home() {
         setIsBookingOpen(false);
         setBookingDate("");
       }, 3000);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       alert(err.message || "An error occurred while booking");
     }
@@ -630,7 +632,7 @@ export default function Home() {
                 At Aura Wellness, we hold that true health stems from profound, uncompromised inner peace. Our sanctuaries are meticulously sculpted to filter out the noise of modern life, offering an atmosphere where silence is celebrated and rejuvenation is treated as an art.
               </p>
               <p className="italic font-serif text-brand-primary text-base sm:text-lg pl-4 border-l-2 border-brand-primary/40 my-6">
-                "Our touch is intentional. Our therapies are grounded in time-honored rituals. Every second at Aura is curated with you at the center."
+                &ldquo;Our touch is intentional. Our therapies are grounded in time-honored rituals. Every second at Aura is curated with you at the center.&rdquo;
               </p>
               <p>
                 We source only the finest globally certified organic ingredients and partner exclusively with licensed practitioners who are absolute masters of their crafts, ensuring that every touch is intentional and every ritual is deeply transformative.
