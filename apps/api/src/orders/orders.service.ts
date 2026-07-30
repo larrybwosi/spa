@@ -5,10 +5,10 @@ import {
   ForbiddenException,
   OnModuleInit,
   OnModuleDestroy,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { ScrymeService } from '../scryme/scryme.service';
-import { User, Role } from '@prisma/client';
+} from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import { ScrymeService } from "../scryme/scryme.service";
+import { User, Role } from "@prisma/client";
 
 @Injectable()
 export class OrdersService implements OnModuleInit, OnModuleDestroy {
@@ -22,7 +22,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     this.queueInterval = setInterval(() => this.processQueue(), 30000);
-    if (this.queueInterval && typeof this.queueInterval.unref === 'function') {
+    if (this.queueInterval && typeof this.queueInterval.unref === "function") {
       this.queueInterval.unref();
     }
   }
@@ -47,10 +47,12 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async mapScrymeOrder(order: any) {
-    const clientId = order.customerId || '';
+    const clientId = order.customerId || "";
 
     const client = clientId
-      ? await this.prisma.user.findUnique({ where: { id: clientId } }).catch(() => null)
+      ? await this.prisma.user
+          .findUnique({ where: { id: clientId } })
+          .catch(() => null)
       : null;
 
     const mappedItems = [];
@@ -71,7 +73,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
           updatedAt: new Date(order.createdAt || Date.now()),
           product: product || {
             id: productId,
-            name: 'Unknown Product',
+            name: "Unknown Product",
             price: item.unitPrice || 0,
             stock: 0,
           },
@@ -85,7 +87,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       totalPrice: order.totalAmount || 0,
       createdAt: new Date(order.createdAt || Date.now()),
       updatedAt: new Date(order.createdAt || Date.now()),
-      client: client || { id: clientId, name: 'Guest Client', email: '' },
+      client: client || { id: clientId, name: "Guest Client", email: "" },
       items: mappedItems,
     };
   }
@@ -98,7 +100,9 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       );
 
       if (user.role === Role.ADMIN || user.role === Role.STAFF) {
-        return mappedOrders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        return mappedOrders.sort(
+          (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+        );
       } else {
         return mappedOrders
           .filter((o) => o.clientId === user.id)
@@ -113,7 +117,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
               include: { product: true },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         });
       } else {
         // CLIENT
@@ -125,7 +129,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
               include: { product: true },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         });
       }
     }
@@ -160,7 +164,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     }
 
     if (user.role === Role.CLIENT && order.clientId !== user.id) {
-      throw new ForbiddenException('You cannot access this order');
+      throw new ForbiddenException("You cannot access this order");
     }
 
     return order;
@@ -174,7 +178,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     },
   ) {
     if (!dto.items || dto.items.length === 0) {
-      throw new BadRequestException('Order must contain at least one item');
+      throw new BadRequestException("Order must contain at least one item");
     }
 
     // Determine target client
@@ -196,18 +200,20 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     // Validate and fetch items locally
     let totalPrice = 0;
     const scrymeItems = [];
-    const productsToMap: any[] = [];
+    const productsToMap = [];
 
     for (const item of dto.items) {
       if (item.quantity <= 0) {
-        throw new BadRequestException('Quantity must be greater than 0');
+        throw new BadRequestException("Quantity must be greater than 0");
       }
 
       const product = await this.prisma.product.findUnique({
         where: { id: item.productId },
       });
       if (!product) {
-        throw new NotFoundException(`Product with ID ${item.productId} not found`);
+        throw new NotFoundException(
+          `Product with ID ${item.productId} not found`,
+        );
       }
 
       if (product.stock < item.quantity) {
@@ -227,9 +233,9 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
 
     const payload = {
       customerId: targetClientId,
-      locationId: process.env.SCRYME_LOCATION_ID || 'default-location',
+      locationId: process.env.SCRYME_LOCATION_ID || "default-location",
       items: scrymeItems,
-      channel: 'ECOMMERCE_STORE',
+      channel: "ECOMMERCE_STORE",
     };
 
     // Try delegation to Scryme first
@@ -240,7 +246,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         const product = productsToMap[idx];
         return {
           id: `item-${product.id}`,
-          orderId: scrymeOrder.id || 'scryme-order-id',
+          orderId: scrymeOrder.id || "scryme-order-id",
           productId: product.id,
           quantity: item.quantity,
           price: product.price,
@@ -251,7 +257,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       });
 
       return {
-        id: scrymeOrder.id || 'scryme-order-id',
+        id: scrymeOrder.id || "scryme-order-id",
         clientId: targetClientId,
         totalPrice,
         createdAt: new Date(),
@@ -265,10 +271,9 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         const orderItemsToCreate = [];
 
         for (const item of dto.items) {
-          const product = await tx.product.findUnique({ where: { id: item.productId } });
-          if (!product) {
-            throw new NotFoundException(`Product with ID ${item.productId} not found`);
-          }
+          const product = await tx.product.findUnique({
+            where: { id: item.productId },
+          });
           await tx.product.update({
             where: { id: product.id },
             data: {

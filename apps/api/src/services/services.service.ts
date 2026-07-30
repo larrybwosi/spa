@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { ScrymeService } from '../scryme/scryme.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import { ScrymeService } from "../scryme/scryme.service";
 
 @Injectable()
 export class ServicesService {
@@ -24,21 +29,29 @@ export class ServicesService {
       for (const item of services) {
         // Map fields from Scryme service structure to local DB
         // Scryme fields: { id, name, description, retailPrice, duration, etc }
-        const price = typeof item.retailPrice === 'number' ? item.retailPrice : (typeof item.price === 'number' ? item.price : 0);
-        const duration = typeof item.duration === 'number' ? item.duration : 60;
-        const desc = typeof item.description === 'string' ? item.description : (item.description?.preferences || null);
+        const price =
+          typeof item.retailPrice === "number"
+            ? item.retailPrice
+            : typeof item.price === "number"
+              ? item.price
+              : 0;
+        const duration = typeof item.duration === "number" ? item.duration : 60;
+        const desc =
+          typeof item.description === "string"
+            ? item.description
+            : item.description?.preferences || null;
 
         await this.prisma.service.upsert({
           where: { id: item.id },
           update: {
-            name: item.name || 'Unnamed Service',
+            name: item.name || "Unnamed Service",
             description: desc,
             duration: duration,
             price: price,
           },
           create: {
             id: item.id,
-            name: item.name || 'Unnamed Service',
+            name: item.name || "Unnamed Service",
             description: desc,
             duration: duration,
             price: price,
@@ -46,18 +59,24 @@ export class ServicesService {
         });
       }
     } catch (err) {
-      this.logger.error(`Failed to sync services to local database: ${err.message}`);
+      this.logger.error(
+        `Failed to sync services to local database: ${err.message}`,
+      );
     }
   }
 
   async getAll() {
     // If cache is valid, return cached services
-    if (this.cachedServices && this.cacheExpiresAt && this.cacheExpiresAt > Date.now()) {
+    if (
+      this.cachedServices &&
+      this.cacheExpiresAt &&
+      this.cacheExpiresAt > Date.now()
+    ) {
       return this.cachedServices;
     }
 
     try {
-      this.logger.debug('Fetching services from Scryme...');
+      this.logger.debug("Fetching services from Scryme...");
       const scrymeServices = await this.scrymeService.listCatalogServices();
 
       // Update cache
@@ -69,10 +88,12 @@ export class ServicesService {
 
       return scrymeServices;
     } catch (error) {
-      this.logger.error(`Failed to fetch services from Scryme: ${error.message}. Falling back to local database.`);
+      this.logger.error(
+        `Failed to fetch services from Scryme: ${error.message}. Falling back to local database.`,
+      );
       // Fallback to local DB on error (e.g., during tests when Scryme is not fully available/mocked or offline)
       return this.prisma.service.findMany({
-        orderBy: { name: 'asc' },
+        orderBy: { name: "asc" },
       });
     }
   }

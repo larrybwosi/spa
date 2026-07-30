@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
-import { ScrymeService } from '../scryme/scryme.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma.service";
+import { ScrymeService } from "../scryme/scryme.service";
 
 @Injectable()
 export class ProductsService {
@@ -24,21 +29,29 @@ export class ProductsService {
       for (const item of products) {
         // Map the fields from Scryme product structure to local DB
         // Scryme fields: { id, name, description, retailPrice, stock, sku, etc }
-        const price = typeof item.retailPrice === 'number' ? item.retailPrice : (typeof item.price === 'number' ? item.price : 0);
-        const stock = typeof item.stock === 'number' ? item.stock : 100;
-        const desc = typeof item.description === 'string' ? item.description : (item.description?.preferences || null);
+        const price =
+          typeof item.retailPrice === "number"
+            ? item.retailPrice
+            : typeof item.price === "number"
+              ? item.price
+              : 0;
+        const stock = typeof item.stock === "number" ? item.stock : 100;
+        const desc =
+          typeof item.description === "string"
+            ? item.description
+            : item.description?.preferences || null;
 
         await this.prisma.product.upsert({
           where: { id: item.id },
           update: {
-            name: item.name || 'Unnamed Product',
+            name: item.name || "Unnamed Product",
             description: desc,
             price: price,
             stock: stock,
           },
           create: {
             id: item.id,
-            name: item.name || 'Unnamed Product',
+            name: item.name || "Unnamed Product",
             description: desc,
             price: price,
             stock: stock,
@@ -46,18 +59,24 @@ export class ProductsService {
         });
       }
     } catch (err) {
-      this.logger.error(`Failed to sync products to local database: ${err.message}`);
+      this.logger.error(
+        `Failed to sync products to local database: ${err.message}`,
+      );
     }
   }
 
   async getAll() {
     // If cache is valid, return cached products
-    if (this.cachedProducts && this.cacheExpiresAt && this.cacheExpiresAt > Date.now()) {
+    if (
+      this.cachedProducts &&
+      this.cacheExpiresAt &&
+      this.cacheExpiresAt > Date.now()
+    ) {
       return this.cachedProducts;
     }
 
     try {
-      this.logger.debug('Fetching products from Scryme...');
+      this.logger.debug("Fetching products from Scryme...");
       const scrymeProducts = await this.scrymeService.listCatalogProducts();
 
       // Update cache
@@ -69,10 +88,12 @@ export class ProductsService {
 
       return scrymeProducts;
     } catch (error) {
-      this.logger.error(`Failed to fetch products from Scryme: ${error.message}. Falling back to local database.`);
+      this.logger.error(
+        `Failed to fetch products from Scryme: ${error.message}. Falling back to local database.`,
+      );
       // Fallback to local DB on error (e.g., during tests when Scryme is not fully available/mocked or offline)
       return this.prisma.product.findMany({
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
     }
   }
