@@ -8,6 +8,7 @@ import { ServicesModule } from './services/services.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { OrdersModule } from './orders/orders.module';
 import { ScrymeModule } from './scryme/scryme.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ScrymeModule } from './scryme/scryme.module';
     BookingsModule,
     OrdersModule,
     ScrymeModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService],
