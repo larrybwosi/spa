@@ -16,8 +16,11 @@ import {
   ChevronRight,
   PhoneCall,
   Clock,
-  ShieldCheck
+  ShieldCheck,
+  Star
 } from "lucide-react";
+import { FALLBACK_SERVICES } from "./services/services-data";
+import { FALLBACK_PRODUCTS } from "./products/product-data";
 
 const InstagramIcon = () => (
   <svg
@@ -119,6 +122,10 @@ export default function Home() {
               Services
               <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
             </Link>
+            <Link href="/products" className="hover:text-brand-primary transition-colors py-2 relative group">
+              Products
+              <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
+            </Link>
             <a href="#philosophy" className="hover:text-brand-primary transition-colors py-2 relative group">
               Philosophy
               <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
@@ -193,6 +200,14 @@ export default function Home() {
             className="hover:text-brand-primary transition-colors py-3 border-b border-brand-border/40 flex justify-between items-center group"
           >
             <span>Services</span>
+            <ChevronRight className="h-4 w-4 text-brand-primary opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
+          </Link>
+          <Link
+            href="/products"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="hover:text-brand-primary transition-colors py-3 border-b border-brand-border/40 flex justify-between items-center group"
+          >
+            <span>Products</span>
             <ChevronRight className="h-4 w-4 text-brand-primary opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
           </Link>
           <a
@@ -311,6 +326,262 @@ export default function Home() {
               <span>Explore Treatments</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURED SERVICES SECTION */}
+      <section className="py-20 bg-brand-card-cream/30 border-t border-brand-border/40 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <span className="text-xs tracking-[0.25em] font-sans text-brand-primary uppercase font-bold block mb-3">
+              RECOMMENDED TREATMENT RITUALS
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-serif text-brand-charcoal tracking-wide mb-4">
+              Featured Sanctuary Services
+            </h2>
+            <div className="w-16 h-[1.5px] bg-brand-primary/40 mx-auto mb-6"></div>
+            <p className="text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed">
+              Indulge in a carefully selected menu of physical and mental renewal experiences curated to alleviate stressors and align structural harmony.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {FALLBACK_SERVICES.slice(0, 3).map((service) => (
+              <Link
+                key={service.id}
+                href={`/services/${service.id}`}
+                className="group flex flex-col h-full bg-white rounded-xl overflow-hidden shadow-xs hover:shadow-md border border-brand-border/40 hover:border-brand-primary/20 transition-all duration-300"
+              >
+                {/* Image Container with Hover scale zoom */}
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-brand-cream/50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={service.image}
+                    alt={service.name}
+                    className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-brand-charcoal/5 group-hover:bg-transparent transition-colors duration-300"></div>
+                </div>
+
+                {/* Card Info */}
+                <div className="flex flex-col flex-1 p-6 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] tracking-[0.2em] font-sans uppercase font-bold text-brand-primary/80">
+                      {service.category}
+                    </span>
+                    <span className="text-xs font-sans text-brand-charcoal/50 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {service.duration} mins
+                    </span>
+                  </div>
+
+                  <h3 className="text-lg sm:text-xl font-serif text-brand-charcoal group-hover:text-brand-primary transition-colors duration-300 leading-tight font-medium font-semibold">
+                    {service.name}
+                  </h3>
+
+                  <p className="text-xs sm:text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed flex-1 line-clamp-2">
+                    {service.description}
+                  </p>
+
+                  {/* View details footer CTA */}
+                  <div className="pt-4 border-t border-brand-border/40 flex items-center justify-between">
+                    <span className="font-serif text-sm sm:text-base text-brand-charcoal font-semibold">
+                      from ${service.price}
+                    </span>
+                    <div className="flex items-center gap-1 text-[10px] sm:text-xs uppercase tracking-[0.15em] font-sans font-bold text-brand-charcoal/80 group-hover:text-brand-primary transition-colors duration-300">
+                      <span>View Details</span>
+                      <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Button asChild variant="outline" className="rounded-lg h-11 px-8 uppercase tracking-widest font-semibold text-xs border-brand-border hover:bg-brand-primary hover:text-white transition-all">
+              <Link href="/services">View All Sanctuary Treatments</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURED PRODUCTS SECTION */}
+      <section className="py-20 bg-brand-cream border-t border-brand-border/45 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <span className="text-xs tracking-[0.25em] font-sans text-brand-primary uppercase font-bold block mb-3">
+              THE AURA APOTHECARY & WELLNESS
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-serif text-brand-charcoal tracking-wide mb-4">
+              Featured Luxury Products
+            </h2>
+            <div className="w-16 h-[1.5px] bg-brand-primary/40 mx-auto mb-6"></div>
+            <p className="text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed">
+              Bring the serene experience of our sanctuary to your daily rituals. Explore our handpicked bespoke formulations and wellness additions.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {FALLBACK_PRODUCTS.slice(3, 6).map((product) => (
+              <div
+                key={product.id}
+                className="group flex flex-col bg-white border border-brand-border/65 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-brand-primary/30"
+              >
+                {/* Product Image container */}
+                <Link href={`/products/${product.slug}`} className="relative aspect-square w-full bg-brand-cream/30 overflow-hidden block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs border border-brand-border/60 px-2.5 py-1 rounded-md text-[9px] font-sans font-bold uppercase tracking-widest text-brand-primary shadow-xs">
+                    {product.category}
+                  </div>
+                </Link>
+
+                {/* Product Info */}
+                <div className="p-5 flex flex-col flex-1">
+                  {/* Stars / Reviews */}
+                  <div className="flex items-center gap-1 mb-2.5">
+                    <div className="flex items-center text-amber-500">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-3 w-3 ${
+                            i < Math.floor(product.rating) ? "fill-amber-500" : "text-gray-200"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] font-sans text-brand-charcoal/50 font-medium">
+                      ({product.reviewsCount})
+                    </span>
+                  </div>
+
+                  {/* Title & Description */}
+                  <div className="block flex-1">
+                    <Link href={`/products/${product.slug}`} className="block group-hover:text-brand-primary transition-colors">
+                      <h3 className="font-serif text-lg text-brand-charcoal font-medium line-clamp-1 mb-1 tracking-wide leading-tight font-semibold">
+                        {product.name}
+                      </h3>
+                    </Link>
+                    <p className="text-xs sm:text-sm text-brand-charcoal/60 font-sans font-light line-clamp-2 leading-relaxed mb-4">
+                      {product.description}
+                    </p>
+                  </div>
+
+                  {/* Price & Action */}
+                  <div className="pt-4 border-t border-brand-border/40 flex items-center justify-between mt-auto">
+                    <span className="font-serif text-base sm:text-lg text-brand-charcoal font-semibold">
+                      ${product.price.toFixed(2)}
+                    </span>
+                    <Link
+                      href={`/products/${product.slug}`}
+                      className="text-[10px] sm:text-xs uppercase tracking-widest text-brand-primary font-bold hover:text-brand-primary-hover flex items-center gap-1 group/btn"
+                    >
+                      <span>View Details</span>
+                      <ChevronRight className="h-3.5 w-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Button asChild variant="outline" className="rounded-lg h-11 px-8 uppercase tracking-widest font-semibold text-xs border-brand-border hover:bg-brand-primary hover:text-white transition-all">
+              <Link href="/products">Explore Entire Apothecary Collection</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS SECTION */}
+      <section className="py-20 bg-brand-card-cream/30 border-t border-brand-border/45 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <span className="text-xs tracking-[0.25em] font-sans text-brand-primary uppercase font-bold block mb-3">
+              CLIENT REFLECTIONS
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-serif text-brand-charcoal tracking-wide mb-4">
+              Sanctuary Testimonials
+            </h2>
+            <div className="w-16 h-[1.5px] bg-brand-primary/40 mx-auto mb-6"></div>
+            <p className="text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed">
+              Discover the transformative physical and sensory journeys experienced by our esteemed guests.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white border border-brand-border/60 rounded-xl p-8 shadow-xs relative flex flex-col justify-between">
+              <div>
+                <div className="flex items-center text-amber-500 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-amber-500" />
+                  ))}
+                </div>
+                <p className="text-sm text-brand-charcoal/80 font-sans font-light leading-relaxed italic mb-6">
+                  &ldquo;Aura Wellness is an absolute sanctuary. The Signature Swedish treatment completely melted away my physical strain. Every detail, from the botanical oil aroma selection to the peaceful lounge, is crafted with pure intentional luxury.&rdquo;
+                </p>
+              </div>
+              <div className="border-t border-brand-border/40 pt-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-brand-cream flex items-center justify-center font-serif text-brand-primary font-bold">
+                  AM
+                </div>
+                <div>
+                  <h4 className="font-serif text-sm font-semibold text-brand-charcoal">Alex Mercer</h4>
+                  <span className="text-[10px] tracking-wider uppercase font-sans text-brand-primary font-bold">Verified Sanctuary Guest</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-brand-border/60 rounded-xl p-8 shadow-xs relative flex flex-col justify-between">
+              <div>
+                <div className="flex items-center text-amber-500 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-amber-500" />
+                  ))}
+                </div>
+                <p className="text-sm text-brand-charcoal/80 font-sans font-light leading-relaxed italic mb-6">
+                  &ldquo;Their custom-blended Bloom Rose Oil is a miracle formulation. It hydrates deeply and has completely restored my skin glow without feeling heavy. I appreciate their commitment to 100% pure organic botanical active nutrients.&rdquo;
+                </p>
+              </div>
+              <div className="border-t border-brand-border/40 pt-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-brand-cream flex items-center justify-center font-serif text-brand-primary font-bold">
+                  SL
+                </div>
+                <div>
+                  <h4 className="font-serif text-sm font-semibold text-brand-charcoal">Sophia Laurent</h4>
+                  <span className="text-[10px] tracking-wider uppercase font-sans text-brand-primary font-bold">Verified Sanctuary Guest</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-brand-border/60 rounded-xl p-8 shadow-xs relative flex flex-col justify-between">
+              <div>
+                <div className="flex items-center text-amber-500 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-amber-500" />
+                  ))}
+                </div>
+                <p className="text-sm text-brand-charcoal/80 font-sans font-light leading-relaxed italic mb-6">
+                  &ldquo;A magnificent experience. The therapists are remarkably skilled, and the location provides absolute filter from metropolitan noise. The post-ritual relaxation bites and herbal infusions are sublime. A masterpiece of wellness.&rdquo;
+                </p>
+              </div>
+              <div className="border-t border-brand-border/40 pt-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-brand-cream flex items-center justify-center font-serif text-brand-primary font-bold">
+                  JD
+                </div>
+                <div>
+                  <h4 className="font-serif text-sm font-semibold text-brand-charcoal">Julian Drake</h4>
+                  <span className="text-[10px] tracking-wider uppercase font-sans text-brand-primary font-bold">Verified Sanctuary Guest</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
