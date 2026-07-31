@@ -109,6 +109,10 @@ export default function ServicesPage() {
               Services
               <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-100 transition-transform origin-left duration-300"></span>
             </Link>
+            <Link href="/products" className="hover:text-brand-primary transition-colors py-2 relative group">
+              Products
+              <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
+            </Link>
             <Link href="/booking" className="hover:text-brand-primary transition-colors py-2 relative group">
               Book Session
               <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
@@ -173,6 +177,14 @@ export default function ServicesPage() {
             className="hover:text-brand-primary transition-colors py-3 border-b border-brand-border/40 flex justify-between items-center group"
           >
             <span>Services</span>
+            <ChevronRight className="h-4 w-4 text-brand-primary opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
+          </Link>
+          <Link
+            href="/products"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="hover:text-brand-primary transition-colors py-3 border-b border-brand-border/40 flex justify-between items-center group"
+          >
+            <span>Products</span>
             <ChevronRight className="h-4 w-4 text-brand-primary opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
           </Link>
           <Link
