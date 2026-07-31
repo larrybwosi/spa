@@ -29,7 +29,7 @@ FROM base AS runner
 ENV NODE_ENV=production
 
 # Copy built artifacts from builder. In Next.js, running start requires package files and Next.js built dirs.
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml generate-env.js .env.example ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
@@ -50,4 +50,4 @@ COPY --from=builder /app/packages/ui/src ./packages/ui/src
 WORKDIR /app/apps/web
 EXPOSE 3000
 
-CMD ["pnpm", "run", "start"]
+CMD ["sh", "-c", "node /app/generate-env.js && pnpm run start"]

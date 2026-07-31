@@ -200,7 +200,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     // Validate and fetch items locally
     let totalPrice = 0;
     const scrymeItems = [];
-    const productsToMap = [];
+    const productsToMap: any[] = [];
 
     for (const item of dto.items) {
       if (item.quantity <= 0) {
@@ -244,6 +244,9 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
 
       const orderItems = dto.items.map((item, idx) => {
         const product = productsToMap[idx];
+        if (!product) {
+          throw new NotFoundException(`Product not found for index ${idx}`);
+        }
         return {
           id: `item-${product.id}`,
           orderId: scrymeOrder.id || "scryme-order-id",
@@ -274,6 +277,11 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
           const product = await tx.product.findUnique({
             where: { id: item.productId },
           });
+          if (!product) {
+            throw new NotFoundException(
+              `Product with ID ${item.productId} not found`,
+            );
+          }
           await tx.product.update({
             where: { id: product.id },
             data: {
