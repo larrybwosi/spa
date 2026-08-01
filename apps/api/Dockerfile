@@ -29,7 +29,7 @@ FROM base AS runner
 ENV NODE_ENV=production
 
 # Copy configuration and workspaces
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml generate-env.js .env.example ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
@@ -46,4 +46,4 @@ COPY --from=builder /app/apps/api/prisma.config.ts ./apps/api/prisma.config.ts
 WORKDIR /app/apps/api
 EXPOSE 3001
 
-CMD ["pnpm", "run", "start:prod"]
+CMD ["sh", "-c", "node /app/generate-env.js && pnpm run start:prod"]

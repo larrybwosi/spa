@@ -4,16 +4,16 @@ services:
     container_name: spa-postgres-db
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: spa_database
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-spa_database}
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d spa_database"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-spa_database}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,11 +23,18 @@ services:
       dockerfile: apps/api/Dockerfile
     container_name: spa-nestjs-api
     restart: always
-    expose:
-      - "3001"
+    ports:
+      - "${API_PORT:-3001}:3001"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/spa_database?sslmode=disable
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/spa_database?sslmode=disable}
       PORT: 3001
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      SCRYME_CLIENT_ID: ${SCRYME_CLIENT_ID}
+      SCRYME_CLIENT_SECRET: ${SCRYME_CLIENT_SECRET}
+      SCRYME_API_KEY: ${SCRYME_API_KEY}
+      SCRYME_ORG_SLUG: ${SCRYME_ORG_SLUG}
+      SCRYME_LOCATION_ID: ${SCRYME_LOCATION_ID}
+      SCRYME_API_URL: ${SCRYME_API_URL}
     depends_on:
       db:
         condition: service_healthy
@@ -37,10 +44,10 @@ services:
       dockerfile: apps/web/Dockerfile
     container_name: spa-nextjs-web
     restart: always
-    expose:
-      - "3000"
+    ports:
+      - "${WEB_PORT:-3000}:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
       PORT: 3000
     depends_on:
       - api
