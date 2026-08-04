@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button } from "@repo/ui/button";
+import useSWR from "swr";
+import { fetcherWithCredentials, defaultFetcher } from "../../swr-fetcher";
 import { FALLBACK_PRODUCTS, Product, MOCK_REVIEWS, slugify } from "../product-data";
 import {
   Menu,
@@ -66,81 +68,64 @@ export default function ProductDetailPage() {
   const slug = params?.slug as string;
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [addedToCartToast, setAddedToCartToast] = useState(false);
 
   // Accordion open states
   const [openSection, setOpenSection] = useState<string | null>("materials");
 
-  // Fetch session on load
-  useEffect(() => {
-    fetch("http://localhost:3001/api/auth/session", { credentials: "include" })
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error("No session");
-      })
-      .then((data) => setUser(data.user))
-      .catch(() => setUser(null));
-  }, []);
+  // Fetch session on load with SWR
+  const { data: sessionData, mutate: mutateSession } = useSWR(
+    "http://localhost:3001/api/auth/session",
+    fetcherWithCredentials,
+    { shouldRetryOnError: false }
+  );
+  const user = sessionData?.user || null;
 
-  // Fetch product based on slug
-  useEffect(() => {
-    if (!slug) return;
+  // Fetch products with SWR
+  const { data: apiProducts, error: productsError, isLoading: productsLoading } = useSWR(
+    "http://localhost:3001/products",
+    defaultFetcher
+  );
 
-    fetch("http://localhost:3001/products")
-      .then((res) => {
-        if (!res.ok) throw new Error("API error");
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data)) {
-          // Find matching products
-          const apiProd = data.find((p: ApiProduct) => p.slug === slug || slugify(p.name) === slug);
-          if (apiProd) {
-            const fallbackMatch = FALLBACK_PRODUCTS.find(
-              (fp) => fp.id === apiProd.id || fp.name.toLowerCase() === apiProd.name.toLowerCase()
-            );
-            setProduct({
-              id: apiProd.id,
-              name: apiProd.name,
-              slug: slug,
-              category: fallbackMatch?.category || "Wellness",
-              price: typeof apiProd.price === "number" ? apiProd.price : 45.00,
-              stock: typeof apiProd.stock === "number" ? apiProd.stock : 100,
-              rating: fallbackMatch?.rating || 4.8,
-              reviewsCount: fallbackMatch?.reviewsCount || 15,
-              image: fallbackMatch?.image || "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000",
-              description: apiProd.description || fallbackMatch?.description || "Bespoke Aura Luxury product.",
-              features: fallbackMatch?.features || {
-                materials: "Premium organic ingredients and/or sustainable luxury composites.",
-                dimensions: "Standard retail packaging.",
-                shipping: "Complimentary premium shipping. Processed within 24 hours."
-              }
-            });
-            setLoading(false);
-            return;
+  const product = useMemo(() => {
+    if (Array.isArray(apiProducts)) {
+      // Find matching product
+      const apiProd = apiProducts.find((p: ApiProduct) => p.slug === slug || slugify(p.name) === slug);
+      if (apiProd) {
+        const fallbackMatch = FALLBACK_PRODUCTS.find(
+          (fp) => fp.id === apiProd.id || fp.name.toLowerCase() === apiProd.name.toLowerCase()
+        );
+        return {
+          id: apiProd.id,
+          name: apiProd.name,
+          slug: slug,
+          category: fallbackMatch?.category || "Wellness",
+          price: typeof apiProd.price === "number" ? apiProd.price : 45.00,
+          stock: typeof apiProd.stock === "number" ? apiProd.stock : 100,
+          rating: fallbackMatch?.rating || 4.8,
+          reviewsCount: fallbackMatch?.reviewsCount || 15,
+          image: fallbackMatch?.image || "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000",
+          description: apiProd.description || fallbackMatch?.description || "Bespoke Aura Luxury product.",
+          features: fallbackMatch?.features || {
+            materials: "Premium organic ingredients and/or sustainable luxury composites.",
+            dimensions: "Standard retail packaging.",
+            shipping: "Complimentary premium shipping. Processed within 24 hours."
           }
-        }
-        // Fallback search
-        const fbMatch = FALLBACK_PRODUCTS.find((fp) => fp.slug === slug);
-        if (fbMatch) {
-          setProduct(fbMatch);
-        } else {
-          setProduct(null);
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        // Fetch offline or API fallback
-        const fbMatch = FALLBACK_PRODUCTS.find((fp) => fp.slug === slug);
-        setProduct(fbMatch || null);
-        setLoading(false);
-      });
-  }, [slug]);
+        } as Product;
+      }
+    }
+
+    if (productsError || (!productsLoading && !apiProducts)) {
+      // Fetch offline or API fallback
+      return FALLBACK_PRODUCTS.find((fp) => fp.slug === slug) || null;
+    }
+
+    return null;
+  }, [apiProducts, productsError, productsLoading, slug]);
+
+  const loading = productsLoading && !apiProducts && !productsError;
 
   const handleLogout = async () => {
     try {
@@ -151,7 +136,7 @@ export default function ProductDetailPage() {
     } catch (e) {
       console.error(e);
     }
-    setUser(null);
+    mutateSession(null, { revalidate: false });
   };
 
   const incrementQuantity = () => {

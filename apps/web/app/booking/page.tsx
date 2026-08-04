@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { Card } from "@repo/ui/card";
+import useSWR from "swr";
+import { fetcherWithCredentials, defaultFetcher } from "../swr-fetcher";
 import {
   Sparkles,
   Calendar,
@@ -394,32 +396,35 @@ function BookingForm({
 
 export default function BookingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
   const [bookingName, setBookingName] = useState("");
-  const [services, setServices] = useState<Service[]>([]);
+
+  // User session with SWR
+  const { data: sessionData, mutate: mutateSession } = useSWR(
+    "http://localhost:3001/api/auth/session",
+    fetcherWithCredentials,
+    { shouldRetryOnError: false }
+  );
+  const user = sessionData?.user || null;
+
+  // Services with SWR
+  const { data: apiServices } = useSWR(
+    "http://localhost:3001/api/services",
+    defaultFetcher
+  );
+  const services = apiServices || [];
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/auth/session", { credentials: "include" })
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error("No session");
-      })
-      .then((data) => {
-        setUser(data.user);
-        if (data.user) {
-          setBookingName(data.user.name);
-        }
-      })
-      .catch(() => setUser(null));
+    if (user) {
+      setBookingName(user.name);
+    }
+  }, [user]);
 
-    fetch("http://localhost:3001/api/services")
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error("Failed to fetch");
-      })
-      .then((data) => setServices(data))
-      .catch((e) => console.error("Could not fetch services, using fallbacks.", e));
-  }, []);
+  const setUser: React.Dispatch<React.SetStateAction<User | null>> = (
+    userVal: React.SetStateAction<User | null>
+  ) => {
+    const nextUser = typeof userVal === "function" ? (userVal as (prev: User | null) => User | null)(user) : userVal;
+    mutateSession(nextUser ? { user: nextUser } : null, { revalidate: false });
+  };
 
   const handleLogout = async () => {
     try {
@@ -430,7 +435,7 @@ export default function BookingPage() {
     } catch (e) {
       console.error(e);
     }
-    setUser(null);
+    mutateSession(null, { revalidate: false });
   };
 
   return (
