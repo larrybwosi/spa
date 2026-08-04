@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button } from "@repo/ui/button";
+import useSWR from "swr";
+import { fetcherWithCredentials, defaultFetcher } from "../../swr-fetcher";
 import { getServiceById, ServiceDetail } from "../services-data";
 import {
   ChevronRight,
@@ -53,71 +55,61 @@ export default function ServiceDetailPage() {
   const id = params?.id as string;
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
-  const [service, setService] = useState<ServiceDetail | null>(null);
-  const [loading, setLoading] = useState(true);
 
   // Active duration package option index (if options exist)
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
 
-  useEffect(() => {
-    // 1. Session check
-    fetch("http://localhost:3001/api/auth/session", { credentials: "include" })
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error("No session");
-      })
-      .then((data) => setUser(data.user))
-      .catch(() => setUser(null));
+  // User session with SWR
+  const { data: sessionData, mutate: mutateSession } = useSWR(
+    "http://localhost:3001/api/auth/session",
+    fetcherWithCredentials,
+    { shouldRetryOnError: false }
+  );
+  const user = sessionData?.user || null;
 
-    // 2. Fetch service data
-    if (!id) return;
+  // Single service data with SWR
+  const { data: apiSvc, error: serviceError, isLoading: serviceLoading } = useSWR(
+    id ? `http://localhost:3001/api/services/${id}` : null,
+    defaultFetcher
+  );
 
-    fetch(`http://localhost:3001/api/services/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Service not found in API");
-        return res.json();
-      })
-      .then((apiSvc) => {
-        // Resolve static fields from local metadata if matched, otherwise map directly
-        const localMeta = getServiceById(apiSvc.id) || getServiceById(id);
-        const price = typeof apiSvc.price === "number" ? apiSvc.price : (localMeta?.price || 120);
-        const duration = typeof apiSvc.duration === "number" ? apiSvc.duration : (localMeta?.duration || 60);
+  const service = useMemo(() => {
+    if (apiSvc) {
+      const localMeta = getServiceById(apiSvc.id) || getServiceById(id);
+      const price = typeof apiSvc.price === "number" ? apiSvc.price : (localMeta?.price || 120);
+      const duration = typeof apiSvc.duration === "number" ? apiSvc.duration : (localMeta?.duration || 60);
 
-        setService({
-          id: apiSvc.id,
-          name: apiSvc.name || localMeta?.name || "Bespoke Treatment",
-          category: localMeta?.category || "Specialty Ritual",
-          description: apiSvc.description || localMeta?.description || "An exclusive luxury therapy.",
-          longDescription: localMeta?.longDescription || apiSvc.description || "Indulge in a premium, beautifully tailored therapeutic sanctuary experience designed to align your physical and mental wellbeing.",
-          price: price,
-          duration: duration,
-          priceOptions: localMeta?.priceOptions || (localMeta ? undefined : [{ duration, price }]),
-          image: localMeta?.image || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=1000",
-          benefits: localMeta?.benefits || [
-            "Restores metabolic and energy balance",
-            "Relieves localized muscle and tissue soreness",
-            "Promotes absolute mindfulness and physical calm"
-          ],
-          steps: localMeta?.steps || [
-            "Sensory and dietary profiling",
-            "Targeted luxury body massage flow",
-            "Closing hot herbal compress"
-          ]
-        });
-        setLoading(false);
-      })
-      .catch(() => {
-        // Fallback to static catalog
-        const localMatch = getServiceById(id);
-        if (localMatch) {
-          setService(localMatch);
-        } else {
-          setService(null);
-        }
-        setLoading(false);
-      });
-  }, [id]);
+      return {
+        id: apiSvc.id,
+        name: apiSvc.name || localMeta?.name || "Bespoke Treatment",
+        category: localMeta?.category || "Specialty Ritual",
+        description: apiSvc.description || localMeta?.description || "An exclusive luxury therapy.",
+        longDescription: localMeta?.longDescription || apiSvc.description || "Indulge in a premium, beautifully tailored therapeutic sanctuary experience designed to align your physical and mental wellbeing.",
+        price: price,
+        duration: duration,
+        priceOptions: localMeta?.priceOptions || (localMeta ? undefined : [{ duration, price }]),
+        image: localMeta?.image || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=1000",
+        benefits: localMeta?.benefits || [
+          "Restores metabolic and energy balance",
+          "Relieves localized muscle and tissue soreness",
+          "Promotes absolute mindfulness and physical calm"
+        ],
+        steps: localMeta?.steps || [
+          "Sensory and dietary profiling",
+          "Targeted luxury body massage flow",
+          "Closing hot herbal compress"
+        ]
+      } as ServiceDetail;
+    }
+
+    if (serviceError || (!serviceLoading && !apiSvc)) {
+      return getServiceById(id) || null;
+    }
+
+    return null;
+  }, [apiSvc, serviceError, serviceLoading, id]);
+
+  const loading = serviceLoading && !apiSvc && !serviceError;
 
   const handleLogout = async () => {
     try {
@@ -128,7 +120,7 @@ export default function ServiceDetailPage() {
     } catch (e) {
       console.error(e);
     }
-    setUser(null);
+    mutateSession(null, { revalidate: false });
   };
 
   if (loading) {

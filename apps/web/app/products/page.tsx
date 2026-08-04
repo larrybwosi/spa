@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
+import useSWR from "swr";
+import { fetcherWithCredentials, defaultFetcher } from "../swr-fetcher";
 import { FALLBACK_PRODUCTS, Product, slugify } from "./product-data";
 import {
   X,
@@ -58,70 +60,60 @@ const FacebookIcon = () => (
 
 export default function ProductsPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
 
-  const [products, setProducts] = useState<Product[]>(FALLBACK_PRODUCTS);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [sortBy, setSortBy] = useState<string>("featured");
 
-  // Fetch session on load
-  useEffect(() => {
-    fetch("http://localhost:3001/api/auth/session", { credentials: "include" })
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error("No session");
-      })
-      .then((data) => setUser(data.user))
-      .catch(() => setUser(null));
-  }, []);
+  // Fetch session on load with SWR
+  const { data: sessionData, mutate: mutateSession } = useSWR(
+    "http://localhost:3001/api/auth/session",
+    fetcherWithCredentials,
+    { shouldRetryOnError: false }
+  );
+  const user = sessionData?.user || null;
 
-  // Fetch products from backend or fallback
-  useEffect(() => {
-    fetch("http://localhost:3001/products")
-      .then((res) => {
-        if (!res.ok) throw new Error("API error");
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          // Map backend products to include frontend details, or use if already detailed
-          const mapped: Product[] = data.map((apiProd: ApiProduct) => {
-            const fallbackMatch = FALLBACK_PRODUCTS.find(
-              (fp) => fp.id === apiProd.id || fp.name.toLowerCase() === apiProd.name.toLowerCase()
-            );
-            return {
-              id: apiProd.id,
-              name: apiProd.name,
-              slug: apiProd.slug || fallbackMatch?.slug || slugify(apiProd.name),
-              category: fallbackMatch?.category || "Wellness",
-              price: typeof apiProd.price === "number" ? apiProd.price : 45.00,
-              stock: typeof apiProd.stock === "number" ? apiProd.stock : 100,
-              rating: fallbackMatch?.rating || 4.8,
-              reviewsCount: fallbackMatch?.reviewsCount || 12,
-              image: fallbackMatch?.image || "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000",
-              description: apiProd.description || fallbackMatch?.description || "Bespoke Aura Luxury product.",
-              features: fallbackMatch?.features || {
-                materials: "Premium organic ingredients and/or sustainable luxury composites.",
-                dimensions: "Standard retail packaging.",
-                shipping: "Complimentary premium shipping. Processed within 24 hours."
-              }
-            };
-          });
+  // Fetch products with SWR
+  const { data: apiProducts } = useSWR(
+    "http://localhost:3001/products",
+    defaultFetcher
+  );
 
-          // Add any fallback products that are not present in backend products so we have a rich catalogs list
-          const uniqueFallbacks = FALLBACK_PRODUCTS.filter(
-            (fp) => !mapped.some((m) => m.name.toLowerCase() === fp.name.toLowerCase())
-          );
-
-          setProducts([...mapped, ...uniqueFallbacks]);
-        }
-      })
-      .catch((err) => {
-        console.log("Using fallback products list:", err);
-        setProducts(FALLBACK_PRODUCTS);
+  const products = useMemo(() => {
+    if (Array.isArray(apiProducts) && apiProducts.length > 0) {
+      // Map backend products to include frontend details, or use if already detailed
+      const mapped: Product[] = apiProducts.map((apiProd: ApiProduct) => {
+        const fallbackMatch = FALLBACK_PRODUCTS.find(
+          (fp) => fp.id === apiProd.id || fp.name.toLowerCase() === apiProd.name.toLowerCase()
+        );
+        return {
+          id: apiProd.id,
+          name: apiProd.name,
+          slug: apiProd.slug || fallbackMatch?.slug || slugify(apiProd.name),
+          category: fallbackMatch?.category || "Wellness",
+          price: typeof apiProd.price === "number" ? apiProd.price : 45.00,
+          stock: typeof apiProd.stock === "number" ? apiProd.stock : 100,
+          rating: fallbackMatch?.rating || 4.8,
+          reviewsCount: fallbackMatch?.reviewsCount || 12,
+          image: fallbackMatch?.image || "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000",
+          description: apiProd.description || fallbackMatch?.description || "Bespoke Aura Luxury product.",
+          features: fallbackMatch?.features || {
+            materials: "Premium organic ingredients and/or sustainable luxury composites.",
+            dimensions: "Standard retail packaging.",
+            shipping: "Complimentary premium shipping. Processed within 24 hours."
+          }
+        };
       });
-  }, []);
+
+      // Add any fallback products that are not present in backend products so we have a rich catalogs list
+      const uniqueFallbacks = FALLBACK_PRODUCTS.filter(
+        (fp) => !mapped.some((m) => m.name.toLowerCase() === fp.name.toLowerCase())
+      );
+
+      return [...mapped, ...uniqueFallbacks];
+    }
+    return FALLBACK_PRODUCTS;
+  }, [apiProducts]);
 
   const handleLogout = async () => {
     try {
@@ -132,7 +124,7 @@ export default function ProductsPage() {
     } catch (e) {
       console.error(e);
     }
-    setUser(null);
+    mutateSession(null, { revalidate: false });
   };
 
   // Filter & sort logic

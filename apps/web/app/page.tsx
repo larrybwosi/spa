@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
+import useSWR from "swr";
+import { fetcherWithCredentials } from "./swr-fetcher";
 import {
   MapPin,
   ArrowRight,
@@ -62,19 +64,13 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
 
-  // User session state
-  const [user, setUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
-
-  // Fetch session on load
-  useEffect(() => {
-    fetch("http://localhost:3001/api/auth/session", { credentials: "include" })
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error("No session");
-      })
-      .then((data) => setUser(data.user))
-      .catch(() => setUser(null));
-  }, []);
+  // User session with SWR
+  const { data: sessionData, mutate: mutateSession } = useSWR(
+    "http://localhost:3001/api/auth/session",
+    fetcherWithCredentials,
+    { shouldRetryOnError: false }
+  );
+  const user = sessionData?.user || null;
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +91,7 @@ export default function Home() {
     } catch (e) {
       console.error(e);
     }
-    setUser(null);
+    mutateSession(null, { revalidate: false });
   };
 
   return (

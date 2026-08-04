@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Button } from "@repo/ui/button";
+import useSWR from "swr";
+import { fetcherWithCredentials, defaultFetcher } from "../swr-fetcher";
 import { FALLBACK_SERVICES, ServiceDetail } from "./services-data";
 import {
   Menu,
@@ -47,26 +49,21 @@ const FacebookIcon = () => (
 
 export default function ServicesPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
 
-  useEffect(() => {
-    fetch("http://localhost:3001/api/auth/session", { credentials: "include" })
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error("No session");
-      })
-      .then((data) => setUser(data.user))
-      .catch(() => setUser(null));
+  // User session with SWR
+  const { data: sessionData, mutate: mutateSession } = useSWR(
+    "http://localhost:3001/api/auth/session",
+    fetcherWithCredentials,
+    { shouldRetryOnError: false }
+  );
+  const user = sessionData?.user || null;
 
-    fetch("http://localhost:3001/api/services")
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error("Failed to fetch");
-      })
-      .catch((e) => {
-        console.warn("Could not fetch API services, using detailed static services.", e);
-      });
-  }, []);
+  // Fetch API services with SWR (cached & performance-optimized)
+  useSWR("http://localhost:3001/api/services", defaultFetcher, {
+    onError: (e) => {
+      console.warn("Could not fetch API services, using detailed static services.", e);
+    }
+  });
 
   const handleLogout = async () => {
     try {
@@ -77,7 +74,7 @@ export default function ServicesPage() {
     } catch (e) {
       console.error(e);
     }
-    setUser(null);
+    mutateSession(null, { revalidate: false });
   };
 
   // Group services by category
