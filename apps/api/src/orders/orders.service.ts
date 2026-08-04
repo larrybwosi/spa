@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma.service";
 import { ScrymeService } from "../scryme/scryme.service";
+import { ProductsService } from "../products/products.service";
 import { User, Role } from "@prisma/client";
 
 @Injectable()
@@ -18,6 +19,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private prisma: PrismaService,
     private scrymeService: ScrymeService,
+    private productsService: ProductsService,
   ) {}
 
   onModuleInit() {
@@ -59,8 +61,8 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     if (order.items && Array.isArray(order.items)) {
       for (const item of order.items) {
         const productId = item.variantId;
-        const product = await this.prisma.product
-          .findUnique({ where: { id: productId } })
+        const product = await this.productsService
+          .getOne(productId)
           .catch(() => null);
 
         mappedItems.push({
@@ -207,10 +209,10 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         throw new BadRequestException("Quantity must be greater than 0");
       }
 
-      const product = await this.prisma.product.findUnique({
-        where: { id: item.productId },
-      });
-      if (!product) {
+      let product: any;
+      try {
+        product = await this.productsService.getOne(item.productId);
+      } catch {
         throw new NotFoundException(
           `Product with ID ${item.productId} not found`,
         );
@@ -274,20 +276,26 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         const orderItemsToCreate = [];
 
         for (const item of dto.items) {
-          const product = await tx.product.findUnique({
-            where: { id: item.productId },
-          });
-          if (!product) {
+          let product: any;
+          try {
+            product = await this.productsService.getOne(item.productId);
+          } catch {
             throw new NotFoundException(
               `Product with ID ${item.productId} not found`,
             );
           }
-          await tx.product.update({
+          // Decrement stock in DB if it's there
+          const localProd = await tx.product.findUnique({
             where: { id: product.id },
-            data: {
-              stock: product.stock - item.quantity,
-            },
           });
+          if (localProd) {
+            await tx.product.update({
+              where: { id: product.id },
+              data: {
+                stock: product.stock - item.quantity,
+              },
+            });
+          }
 
           orderItemsToCreate.push({
             productId: product.id,

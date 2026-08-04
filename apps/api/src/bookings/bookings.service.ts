@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma.service";
 import { ScrymeService } from "../scryme/scryme.service";
+import { ServicesService } from "../services/services.service";
 import { BookingStatus, User, Role } from "@prisma/client";
 
 @Injectable()
@@ -18,6 +19,7 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private prisma: PrismaService,
     private scrymeService: ScrymeService,
+    private servicesService: ServicesService,
   ) {}
 
   onModuleInit() {
@@ -58,9 +60,7 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
       this.prisma.user
         .findUnique({ where: { id: clientId } })
         .catch(() => null),
-      this.prisma.service
-        .findUnique({ where: { id: serviceId } })
-        .catch(() => null),
+      this.servicesService.getOne(serviceId).catch(() => null),
       this.prisma.user.findUnique({ where: { id: staffId } }).catch(() => null),
     ]);
 
@@ -179,11 +179,11 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
       );
     }
 
-    // 3. Validate service exists
-    const service = await this.prisma.service.findUnique({
-      where: { id: dto.serviceId },
-    });
-    if (!service) {
+    // 3. Validate service exists via ServicesService (which checks Scryme)
+    let service: any;
+    try {
+      service = await this.servicesService.getOne(dto.serviceId);
+    } catch {
       throw new NotFoundException(`Service with ID ${dto.serviceId} not found`);
     }
 
