@@ -28,9 +28,48 @@ export class ScrymeService {
   private tokenExpiresAt: number | null = null; // timestamp in ms
 
   /**
+   * Helper to parse error details from failed HTTP responses.
+   * Handles JSON payload, plain text, or default status text.
+   */
+  private async parseErrorBody(response: Response): Promise<string> {
+    try {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const json = await response.json();
+        return (
+          json.message ||
+          json.error_description ||
+          json.error ||
+          JSON.stringify(json)
+        );
+      }
+      const text = await response.text();
+      return text || response.statusText;
+    } catch {
+      return response.statusText || "Unknown API Error";
+    }
+  }
+
+  /**
+   * Helper to handle network / unexpected errors thrown during fetch.
+   */
+  private handleNetworkError(error: unknown, contextMessage: string): never {
+    if (error instanceof HttpException) {
+      throw error;
+    }
+    const message =
+      error instanceof Error ? error.message : "Network/Connection error";
+    this.logger.error(`${contextMessage}: ${message}`);
+    throw new HttpException(
+      `${contextMessage}: ${message}`,
+      HttpStatus.BAD_GATEWAY,
+    );
+  }
+
+  /**
    * Exchanges Client ID & Client Secret for an Access Token at /v3/auth/token
    */
-  async fetchAccessToken(): Promise<string> {
+  async fetchAccessToken(forceRefresh = false): Promise<string> {
     const clientId = this.clientId;
     const clientSecret = this.clientSecret;
 
@@ -43,6 +82,7 @@ export class ScrymeService {
 
     // Return cached token if valid and not expiring in the next 10 seconds
     if (
+      !forceRefresh &&
       this.cachedToken &&
       this.tokenExpiresAt &&
       this.tokenExpiresAt > Date.now() + 10000
@@ -55,62 +95,64 @@ export class ScrymeService {
       this.logger.debug(`Exchanging client credentials at: ${url}`);
       const response = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clientId, clientSecret }),
       });
 
       if (!response.ok) {
-        let errorDetails = "";
-        try {
-          errorDetails = await response.text();
-        } catch {
-          // Ignored reading text error
-        }
+        const errorDetails = await this.parseErrorBody(response);
         this.logger.error(
           `Scryme Token Exchange error (${response.status}): ${errorDetails}`,
         );
         throw new HttpException(
-          `Scryme Token Exchange failed: ${errorDetails || response.statusText}`,
+          `Scryme Token Exchange failed: ${errorDetails}`,
           response.status || HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
 
-      const data = (await response.json()) as {
-        accessToken: string;
-        tokenType: string;
-        expiresIn: number;
+      const resp = (await response.json()) as {
+        data: {
+          accessToken: string;
+          tokenType: string;
+          expiresIn: number;
+        };
       };
+      const data = resp.data;
+
+      if (!data.accessToken) {
+        throw new HttpException(
+          "Scryme Auth API did not return an access token",
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
       this.cachedToken = data.accessToken;
-      // Convert expiresIn (seconds) to absolute expiration timestamp in milliseconds
       this.tokenExpiresAt = Date.now() + (data.expiresIn || 3600) * 1000;
 
       this.logger.debug("Successfully exchanged Scryme OAuth2 Access Token");
       return this.cachedToken;
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      this.logger.error(
-        `Scryme Token Exchange connection failure: ${error.message}`,
-      );
-      throw new HttpException(
-        `Scryme Token Exchange connection failure: ${error.message}`,
-        HttpStatus.BAD_GATEWAY,
+      this.handleNetworkError(
+        error,
+        "Scryme Token Exchange connection failure",
       );
     }
   }
 
   /**
    * Universal fetch request helper to query the Scryme API.
+   * Includes automatic retry on 401 Unauthorized errors.
    */
-  async request<T>(method: string, path: string, body?: any): Promise<T> {
-    // Replace {orgSlug} placeholder dynamically if it exists in path
+  async request<T>(
+    method: string,
+    path: string,
+    body?: any,
+    isRetry = false,
+  ): Promise<T> {
     const resolvedPath = path.replace("{orgSlug}", this.orgSlug);
     const url = `${this.apiUrl}${resolvedPath}`;
 
-    const token = await this.fetchAccessToken();
+    const token = await this.fetchAccessToken(isRetry);
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -125,34 +167,48 @@ export class ScrymeService {
         body: body ? JSON.stringify(body) : undefined,
       });
 
+      // Handle 401 Unauthorized (invalid/expired token) with a single retry
+      if (response.status === HttpStatus.UNAUTHORIZED && !isRetry) {
+        this.logger.warn(
+          "Received 401 Unauthorized from Scryme. Retrying with a refreshed token...",
+        );
+        this.cachedToken = null;
+        this.tokenExpiresAt = null;
+        return this.request<T>(method, path, body, true);
+      }
+
       if (!response.ok) {
-        let errorDetails = "";
-        try {
-          errorDetails = await response.text();
-        } catch {
-          // Ignored reading text error
-        }
+        const errorDetails = await this.parseErrorBody(response);
         this.logger.error(
           `Scryme API error (${response.status}): ${errorDetails}`,
         );
         throw new HttpException(
-          `Scryme API error: ${errorDetails || response.statusText}`,
+          `Scryme API error: ${errorDetails}`,
           response.status || HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
 
-      // Check if response has content (some DELETE / status endpoints return empty body or 204)
-      const text = await response.text();
-      return text ? (JSON.parse(text) as T) : ({} as T);
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
+      // Handle empty response bodies (e.g., 204 No Content or empty DELETE responses)
+      if (response.status === HttpStatus.NO_CONTENT) {
+        return {} as T;
       }
-      this.logger.error(`Failed to connect to Scryme API: ${error.message}`);
-      throw new HttpException(
-        `Scryme connection failure: ${error.message}`,
-        HttpStatus.BAD_GATEWAY,
-      );
+
+      const text = await response.text();
+      if (!text) {
+        return {} as T;
+      }
+
+      try {
+        return JSON.parse(text) as T;
+      } catch (jsonError) {
+        this.logger.error(`Failed to parse response JSON from ${url}`);
+        throw new HttpException(
+          "Invalid JSON response from Scryme API",
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+    } catch (error) {
+      this.handleNetworkError(error, "Scryme connection failure");
     }
   }
 

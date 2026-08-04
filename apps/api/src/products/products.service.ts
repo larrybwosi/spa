@@ -66,18 +66,22 @@ export class ProductsService {
   }
 
   async getAll() {
+    console.log("getAll called");
     // If cache is valid, return cached products
     if (
       this.cachedProducts &&
       this.cacheExpiresAt &&
       this.cacheExpiresAt > Date.now()
     ) {
+      console.log("cachedProducts", this.cachedProducts);
       return this.cachedProducts;
     }
 
     try {
       this.logger.debug("Fetching products from Scryme...");
       const scrymeProducts = await this.scrymeService.listCatalogProducts();
+
+      console.log("scrymeProducts", scrymeProducts);
 
       // Update cache
       this.cachedProducts = scrymeProducts;
@@ -88,6 +92,9 @@ export class ProductsService {
 
       return scrymeProducts;
     } catch (error) {
+      console.log(
+        `Failed to fetch products from Scryme: ${error.message}. Falling back to stale cache.`,
+      );
       this.logger.error(
         `Failed to fetch products from Scryme: ${error.message}. Falling back to stale cache.`,
       );

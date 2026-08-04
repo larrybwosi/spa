@@ -14,7 +14,7 @@ import {
   ChevronRight,
   Search,
   SlidersHorizontal,
-  Star
+  Star,
 } from "lucide-react";
 
 interface ApiProduct {
@@ -69,45 +69,57 @@ export default function ProductsPage() {
   const { data: sessionData, mutate: mutateSession } = useSWR(
     "http://localhost:3001/api/auth/session",
     fetcherWithCredentials,
-    { shouldRetryOnError: false }
+    { shouldRetryOnError: false },
   );
   const user = sessionData?.user || null;
 
   // Fetch products with SWR
   const { data: apiProducts } = useSWR(
-    "http://localhost:3001/products",
-    defaultFetcher
+    "http://localhost:3001/api/products",
+    defaultFetcher,
   );
+
+  console.log(apiProducts);
 
   const products = useMemo(() => {
     if (Array.isArray(apiProducts) && apiProducts.length > 0) {
       // Map backend products to include frontend details, or use if already detailed
       const mapped: Product[] = apiProducts.map((apiProd: ApiProduct) => {
         const fallbackMatch = FALLBACK_PRODUCTS.find(
-          (fp) => fp.id === apiProd.id || fp.name.toLowerCase() === apiProd.name.toLowerCase()
+          (fp) =>
+            fp.id === apiProd.id ||
+            fp.name.toLowerCase() === apiProd.name.toLowerCase(),
         );
         return {
           id: apiProd.id,
           name: apiProd.name,
           slug: apiProd.slug || fallbackMatch?.slug || slugify(apiProd.name),
           category: fallbackMatch?.category || "Wellness",
-          price: typeof apiProd.price === "number" ? apiProd.price : 45.00,
+          price: typeof apiProd.price === "number" ? apiProd.price : 45.0,
           stock: typeof apiProd.stock === "number" ? apiProd.stock : 100,
           rating: fallbackMatch?.rating || 4.8,
           reviewsCount: fallbackMatch?.reviewsCount || 12,
-          image: fallbackMatch?.image || "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000",
-          description: apiProd.description || fallbackMatch?.description || "Bespoke Aura Luxury product.",
+          image:
+            fallbackMatch?.image ||
+            "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000",
+          description:
+            apiProd.description ||
+            fallbackMatch?.description ||
+            "Bespoke Aura Luxury product.",
           features: fallbackMatch?.features || {
-            materials: "Premium organic ingredients and/or sustainable luxury composites.",
+            materials:
+              "Premium organic ingredients and/or sustainable luxury composites.",
             dimensions: "Standard retail packaging.",
-            shipping: "Complimentary premium shipping. Processed within 24 hours."
-          }
+            shipping:
+              "Complimentary premium shipping. Processed within 24 hours.",
+          },
         };
       });
 
       // Add any fallback products that are not present in backend products so we have a rich catalogs list
       const uniqueFallbacks = FALLBACK_PRODUCTS.filter(
-        (fp) => !mapped.some((m) => m.name.toLowerCase() === fp.name.toLowerCase())
+        (fp) =>
+          !mapped.some((m) => m.name.toLowerCase() === fp.name.toLowerCase()),
       );
 
       return [...mapped, ...uniqueFallbacks];
@@ -128,26 +140,29 @@ export default function ProductsPage() {
   };
 
   // Filter & sort logic
-  const filteredProducts = products.filter((prod) => {
-    const matchesSearch = prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prod.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prod.category.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredProducts = products
+    .filter((prod) => {
+      const matchesSearch =
+        prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        prod.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        prod.category.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesCategory = selectedCategory === "All" || prod.category === selectedCategory;
+      const matchesCategory =
+        selectedCategory === "All" || prod.category === selectedCategory;
 
-    return matchesSearch && matchesCategory;
-  }).sort((a, b) => {
-    if (sortBy === "price-low") return a.price - b.price;
-    if (sortBy === "price-high") return b.price - a.price;
-    if (sortBy === "rating") return b.rating - a.rating;
-    return 0; // Default Featured
-  });
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      if (sortBy === "price-low") return a.price - b.price;
+      if (sortBy === "price-high") return b.price - a.price;
+      if (sortBy === "rating") return b.rating - a.rating;
+      return 0; // Default Featured
+    });
 
   const categories = ["All", "Wellness", "Footwear", "Apparel"];
 
   return (
     <div className="relative min-h-screen bg-brand-cream text-brand-charcoal overflow-x-hidden font-sans selection:bg-brand-primary/20">
-
       {/* HEADER / NAVIGATION */}
       <header className="sticky top-0 z-40 bg-brand-cream/80 backdrop-blur-md border-b border-brand-border/60 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -158,19 +173,31 @@ export default function ProductsPage() {
           </Link>
 
           <nav className="hidden lg:flex items-center space-x-8 text-xs tracking-[0.2em] font-medium uppercase text-brand-charcoal/80">
-            <Link href="/" className="hover:text-brand-primary transition-colors py-2 relative group">
+            <Link
+              href="/"
+              className="hover:text-brand-primary transition-colors py-2 relative group"
+            >
               Home
               <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
             </Link>
-            <Link href="/services" className="hover:text-brand-primary transition-colors py-2 relative group">
+            <Link
+              href="/services"
+              className="hover:text-brand-primary transition-colors py-2 relative group"
+            >
               Services
               <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
             </Link>
-            <Link href="/products" className="text-brand-primary transition-colors py-2 relative group">
+            <Link
+              href="/products"
+              className="text-brand-primary transition-colors py-2 relative group"
+            >
               Products
               <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-100 transition-transform origin-left duration-300"></span>
             </Link>
-            <Link href="/booking" className="hover:text-brand-primary transition-colors py-2 relative group">
+            <Link
+              href="/booking"
+              className="hover:text-brand-primary transition-colors py-2 relative group"
+            >
               Booking
               <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
             </Link>
@@ -212,7 +239,11 @@ export default function ProductsPage() {
             className="lg:hidden p-2 text-brand-charcoal hover:text-brand-primary transition-colors rounded-full hover:bg-brand-card-cream/40"
             aria-label="Toggle menu"
           >
-            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
           </button>
         </div>
       </header>
@@ -220,7 +251,9 @@ export default function ProductsPage() {
       {/* MOBILE MENU DRAWER */}
       <div
         className={`fixed inset-0 z-30 bg-brand-cream/98 transition-all duration-500 ease-in-out transform lg:hidden ${
-          isMobileMenuOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
+          isMobileMenuOpen
+            ? "translate-x-0 opacity-100"
+            : "translate-x-full opacity-0 pointer-events-none"
         } pt-24 px-6 sm:px-12`}
       >
         <nav className="flex flex-col space-y-5 text-lg tracking-[0.15em] font-serif text-brand-charcoal">
@@ -288,7 +321,9 @@ export default function ProductsPage() {
               asChild
               className="w-full text-xs uppercase tracking-[0.2em] bg-brand-primary text-white py-6 rounded-lg hover:bg-brand-primary-hover shadow-md"
             >
-              <Link href="/booking" onClick={() => setIsMobileMenuOpen(false)}>Book Now</Link>
+              <Link href="/booking" onClick={() => setIsMobileMenuOpen(false)}>
+                Book Now
+              </Link>
             </Button>
           </div>
         </nav>
@@ -307,7 +342,9 @@ export default function ProductsPage() {
             Bespoke Product Collection
           </h1>
           <p className="text-sm sm:text-base text-brand-charcoal/70 max-w-2xl mx-auto font-sans font-light leading-relaxed">
-            Nourish your skin, elevate your style, and restore body wellness. Explore our intentionally curated selection of luxurious lifestyle additions.
+            Nourish your skin, elevate your style, and restore body wellness.
+            Explore our intentionally curated selection of luxurious lifestyle
+            additions.
           </p>
         </div>
       </section>
@@ -316,7 +353,6 @@ export default function ProductsPage() {
       <section className="py-8 bg-brand-cream border-b border-brand-border/40 sticky top-20 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-
             {/* Left: Search & Filter Tabs */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-1">
               {/* Search Bar */}
@@ -363,7 +399,6 @@ export default function ProductsPage() {
                 <option value="rating">Top Rated</option>
               </select>
             </div>
-
           </div>
         </div>
       </section>
@@ -372,9 +407,12 @@ export default function ProductsPage() {
       <main className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {filteredProducts.length === 0 ? (
           <div className="text-center py-20 bg-white/40 border border-brand-border/60 rounded-xl max-w-xl mx-auto shadow-sm">
-            <h3 className="font-serif text-2xl text-brand-charcoal/75 mb-3">No Products Found</h3>
+            <h3 className="font-serif text-2xl text-brand-charcoal/75 mb-3">
+              No Products Found
+            </h3>
             <p className="text-sm text-brand-charcoal/60 font-sans font-light">
-              We couldn&apos;t find any products matching your search criteria. Try a different query.
+              We couldn&apos;t find any products matching your search criteria.
+              Try a different query.
             </p>
           </div>
         ) : (
@@ -385,7 +423,10 @@ export default function ProductsPage() {
                 className="group flex flex-col bg-white border border-brand-border/65 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-brand-primary/30"
               >
                 {/* Product Image container */}
-                <Link href={`/products/${product.slug}`} className="relative aspect-square w-full bg-brand-cream/30 overflow-hidden block">
+                <Link
+                  href={`/products/${product.slug}`}
+                  className="relative aspect-square w-full bg-brand-cream/30 overflow-hidden block"
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={product.image}
@@ -406,7 +447,9 @@ export default function ProductsPage() {
                         <Star
                           key={i}
                           className={`h-3 w-3 ${
-                            i < Math.floor(product.rating) ? "fill-amber-500" : "text-gray-200"
+                            i < Math.floor(product.rating)
+                              ? "fill-amber-500"
+                              : "text-gray-200"
                           }`}
                         />
                       ))}
@@ -441,7 +484,6 @@ export default function ProductsPage() {
                     </Link>
                   </div>
                 </div>
-
               </div>
             ))}
           </div>
@@ -457,25 +499,61 @@ export default function ProductsPage() {
                 AURA WELLNESS
               </span>
               <p className="text-xs sm:text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed max-w-sm">
-                Elevating human consciousness and state of physical being through highly mindful organic therapies and quiet luxury care.
+                Elevating human consciousness and state of physical being
+                through highly mindful organic therapies and quiet luxury care.
               </p>
               <div className="flex items-center gap-3">
-                <a href="#" className="w-10 h-10 rounded-full border border-brand-border/80 flex items-center justify-center text-brand-charcoal/65 hover:text-brand-primary hover:border-brand-primary transition-all bg-white"><InstagramIcon /></a>
-                <a href="#" className="w-10 h-10 rounded-full border border-brand-border/80 flex items-center justify-center text-brand-charcoal/65 hover:text-brand-primary hover:border-brand-primary transition-all bg-white"><FacebookIcon /></a>
+                <a
+                  href="#"
+                  className="w-10 h-10 rounded-full border border-brand-border/80 flex items-center justify-center text-brand-charcoal/65 hover:text-brand-primary hover:border-brand-primary transition-all bg-white"
+                >
+                  <InstagramIcon />
+                </a>
+                <a
+                  href="#"
+                  className="w-10 h-10 rounded-full border border-brand-border/80 flex items-center justify-center text-brand-charcoal/65 hover:text-brand-primary hover:border-brand-primary transition-all bg-white"
+                >
+                  <FacebookIcon />
+                </a>
               </div>
             </div>
 
             <div className="lg:col-span-4 space-y-5">
-              <h4 className="text-[10px] tracking-[0.25em] font-sans font-bold uppercase text-brand-charcoal/50">EXPLORE</h4>
+              <h4 className="text-[10px] tracking-[0.25em] font-sans font-bold uppercase text-brand-charcoal/50">
+                EXPLORE
+              </h4>
               <ul className="space-y-3 text-xs sm:text-sm font-sans text-brand-charcoal/75">
-                <li><Link href="/" className="hover:text-brand-primary transition-colors">Home Sanctuary</Link></li>
-                <li><Link href="/services" className="hover:text-brand-primary transition-colors">Our Treatments</Link></li>
-                <li><Link href="/products" className="hover:text-brand-primary transition-colors">Bespoke Products</Link></li>
+                <li>
+                  <Link
+                    href="/"
+                    className="hover:text-brand-primary transition-colors"
+                  >
+                    Home Sanctuary
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/services"
+                    className="hover:text-brand-primary transition-colors"
+                  >
+                    Our Treatments
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/products"
+                    className="hover:text-brand-primary transition-colors"
+                  >
+                    Bespoke Products
+                  </Link>
+                </li>
               </ul>
             </div>
 
             <div className="lg:col-span-4 space-y-5">
-              <h4 className="text-[10px] tracking-[0.25em] font-sans font-bold uppercase text-brand-charcoal/50">SANCTUARY DETAILS</h4>
+              <h4 className="text-[10px] tracking-[0.25em] font-sans font-bold uppercase text-brand-charcoal/50">
+                SANCTUARY DETAILS
+              </h4>
               <p className="text-xs sm:text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed">
                 123 Serene Lane, Wellness District, Beverly Hills, CA 90210
               </p>
@@ -486,12 +564,13 @@ export default function ProductsPage() {
           </div>
 
           <div className="pt-8 border-t border-brand-border/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] sm:text-xs text-brand-charcoal/55 font-sans tracking-wider">
-            <span>© 2024 Aura Luxury Wellness Sanctuary. All rights reserved.</span>
+            <span>
+              © 2024 Aura Luxury Wellness Sanctuary. All rights reserved.
+            </span>
             <span className="italic font-serif">Designed with Intent</span>
           </div>
         </div>
       </footer>
-
     </div>
   );
 }

@@ -2,9 +2,17 @@ import "dotenv/config";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import cookieParser from "cookie-parser";
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from "@nestjs/platform-fastify";
+import { FastifyRequest, FastifyReply } from "fastify";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter(),
+  );
 
   // Enable CORS so our mobile application (Android) and client website can connect seamlessly
   app.enableCors({
@@ -14,6 +22,12 @@ async function bootstrap() {
 
   // Enable cookie parsing so we can read session cookies seamlessly
   app.use(cookieParser());
+
+  // Log incoming requests
+  app.use((req: FastifyRequest, res: FastifyReply, next: () => void) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+  });
 
   // Set standard API global prefix
   app.setGlobalPrefix("api");
