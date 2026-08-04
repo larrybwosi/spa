@@ -89,12 +89,14 @@ export class ServicesService {
       return scrymeServices;
     } catch (error) {
       this.logger.error(
-        `Failed to fetch services from Scryme: ${error.message}. Falling back to local database.`,
+        `Failed to fetch services from Scryme: ${error.message}. Falling back to stale cache.`,
       );
-      // Fallback to local DB on error (e.g., during tests when Scryme is not fully available/mocked or offline)
-      return this.prisma.service.findMany({
-        orderBy: { name: "asc" },
-      });
+      // Fallback to stale cache if available
+      if (this.cachedServices) {
+        this.logger.debug("Returning stale cached services as fallback.");
+        return this.cachedServices;
+      }
+      throw error;
     }
   }
 
@@ -107,22 +109,18 @@ export class ServicesService {
       }
     }
 
-    // Otherwise, check local DB or fetch from Scryme (using list catalog as backup check)
-    const service = await this.prisma.service.findUnique({ where: { id } });
-    if (!service) {
-      // Try to re-fetch/re-populate cache as a fallback
-      try {
-        const freshServices = await this.getAll();
-        const foundFresh = freshServices.find((s) => s.id === id);
-        if (foundFresh) {
-          return foundFresh;
-        }
-      } catch {
-        // Ignored reading fresh services fallback
+    // Otherwise, fetch fresh services from Scryme and try to search again
+    try {
+      const freshServices = await this.getAll();
+      const foundFresh = freshServices.find((s) => s.id === id);
+      if (foundFresh) {
+        return foundFresh;
       }
-      throw new NotFoundException(`Service with ID ${id} not found`);
+    } catch {
+      // Ignored reading fresh services fallback
     }
-    return service;
+
+    throw new NotFoundException(`Service with ID ${id} not found`);
   }
 
   async create(dto: {

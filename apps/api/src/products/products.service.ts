@@ -89,12 +89,14 @@ export class ProductsService {
       return scrymeProducts;
     } catch (error) {
       this.logger.error(
-        `Failed to fetch products from Scryme: ${error.message}. Falling back to local database.`,
+        `Failed to fetch products from Scryme: ${error.message}. Falling back to stale cache.`,
       );
-      // Fallback to local DB on error (e.g., during tests when Scryme is not fully available/mocked or offline)
-      return this.prisma.product.findMany({
-        orderBy: { createdAt: "desc" },
-      });
+      // Fallback to stale cache if available
+      if (this.cachedProducts) {
+        this.logger.debug("Returning stale cached products as fallback.");
+        return this.cachedProducts;
+      }
+      throw error;
     }
   }
 
@@ -107,22 +109,18 @@ export class ProductsService {
       }
     }
 
-    // Otherwise, check local DB or fetch from Scryme (using list catalog as backup check)
-    const product = await this.prisma.product.findUnique({ where: { id } });
-    if (!product) {
-      // Try to re-fetch/re-populate cache as a fallback
-      try {
-        const freshProducts = await this.getAll();
-        const foundFresh = freshProducts.find((p) => p.id === id);
-        if (foundFresh) {
-          return foundFresh;
-        }
-      } catch {
-        // Ignored, try local DB or fallback
+    // Otherwise, fetch fresh products from Scryme and try to search again
+    try {
+      const freshProducts = await this.getAll();
+      const foundFresh = freshProducts.find((p) => p.id === id);
+      if (foundFresh) {
+        return foundFresh;
       }
-      throw new NotFoundException(`Product with ID ${id} not found`);
+    } catch {
+      // Ignored, handle exception if not found below
     }
-    return product;
+
+    throw new NotFoundException(`Product with ID ${id} not found`);
   }
 
   async create(dto: {
