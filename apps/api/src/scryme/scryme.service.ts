@@ -1,8 +1,11 @@
 import { Injectable, Logger, HttpException, HttpStatus } from "@nestjs/common";
+import { ScrymeCacheService } from "./scryme-cache.service";
 
 @Injectable()
 export class ScrymeService {
   private readonly logger = new Logger(ScrymeService.name);
+
+  constructor(private readonly cacheService: ScrymeCacheService) {}
 
   private get clientId(): string | undefined {
     return process.env.SCRYME_CLIENT_ID;
@@ -80,14 +83,31 @@ export class ScrymeService {
       return this.apiKey;
     }
 
-    // Return cached token if valid and not expiring in the next 10 seconds
+    // 1. Check local in-memory token first (to support existing tests/quick calls)
     if (
       !forceRefresh &&
       this.cachedToken &&
       this.tokenExpiresAt &&
       this.tokenExpiresAt > Date.now() + 10000
     ) {
-      return this.cachedToken;
+      return this.cachedToken!;
+    }
+
+    // 2. Check the ScrymeCacheService
+    if (!forceRefresh) {
+      try {
+        const cachedToken =
+          await this.cacheService.get<string>("scryme:auth:token");
+        if (cachedToken) {
+          this.cachedToken = cachedToken;
+          this.tokenExpiresAt = Date.now() + 3500 * 1000; // sync fallback
+          return cachedToken;
+        }
+      } catch (err) {
+        this.logger.error(
+          `Error fetching cached Scryme token: ${err?.message || err}`,
+        );
+      }
     }
 
     const url = `${this.apiUrl}/v3/auth/token`;
@@ -110,32 +130,77 @@ export class ScrymeService {
         );
       }
 
-      const resp = (await response.json()) as {
-        data: {
-          accessToken: string;
-          tokenType: string;
-          expiresIn: number;
-        };
-      };
-      const data = resp.data;
+      const resp = (await response.json()) as any;
+      const data = resp.data || resp; // Support both structures gracefully!
+      const accessToken = data.accessToken || resp.accessToken;
+      const expiresIn = data.expiresIn || resp.expiresIn || 3600;
 
-      if (!data.accessToken) {
+      if (!accessToken) {
         throw new HttpException(
           "Scryme Auth API did not return an access token",
           HttpStatus.BAD_GATEWAY,
         );
       }
 
-      this.cachedToken = data.accessToken;
-      this.tokenExpiresAt = Date.now() + (data.expiresIn || 3600) * 1000;
+      this.cachedToken = accessToken;
+      this.tokenExpiresAt = Date.now() + (expiresIn || 3600) * 1000;
+
+      // Save token in our ScrymeCacheService
+      try {
+        await this.cacheService.set(
+          "scryme:auth:token",
+          accessToken,
+          expiresIn || 3600,
+        );
+      } catch (err) {
+        this.logger.error(`Error caching Scryme token: ${err?.message || err}`);
+      }
 
       this.logger.debug("Successfully exchanged Scryme OAuth2 Access Token");
-      return this.cachedToken;
+      return accessToken;
     } catch (error) {
       this.handleNetworkError(
         error,
         "Scryme Token Exchange connection failure",
       );
+    }
+  }
+
+  /**
+   * Invalidation helper based on mutated path categories
+   */
+  private async invalidateCacheForPath(resolvedPath: string) {
+    if (resolvedPath.includes("/customers")) {
+      await this.cacheService.invalidatePattern(
+        `scryme:req:GET:/v3/*/customers*`,
+      );
+    } else if (resolvedPath.includes("/members")) {
+      await this.cacheService.invalidatePattern(
+        `scryme:req:GET:/v3/*/members*`,
+      );
+    } else if (
+      resolvedPath.includes("/shifts") ||
+      resolvedPath.includes("/breaks")
+    ) {
+      await this.cacheService.invalidatePattern(
+        `scryme:req:GET:/v3/*/services/staff/*/shifts*`,
+      );
+    } else if (resolvedPath.includes("/bookings")) {
+      await this.cacheService.invalidatePattern(
+        `scryme:req:GET:/v3/*/services/bookings*`,
+      );
+    } else if (resolvedPath.includes("/orders")) {
+      await this.cacheService.invalidatePattern(`scryme:req:GET:/v3/*/orders*`);
+    } else if (resolvedPath.includes("/catalog/products")) {
+      await this.cacheService.invalidatePattern(
+        `scryme:req:GET:/v3/*/catalog/products*`,
+      );
+    } else if (resolvedPath.includes("/catalog/services")) {
+      await this.cacheService.invalidatePattern(
+        `scryme:req:GET:/v3/*/catalog/services*`,
+      );
+    } else {
+      await this.cacheService.invalidatePattern(`scryme:req:GET:*`);
     }
   }
 
@@ -151,6 +216,23 @@ export class ScrymeService {
   ): Promise<T> {
     const resolvedPath = path.replace("{orgSlug}", this.orgSlug);
     const url = `${this.apiUrl}${resolvedPath}`;
+
+    const isGet = method.toUpperCase() === "GET";
+    const cacheKey = `scryme:req:GET:${resolvedPath}`;
+
+    if (isGet) {
+      try {
+        const cachedData = await this.cacheService.get<T>(cacheKey);
+        if (cachedData) {
+          this.logger.debug(`Cache hit for Scryme GET ${resolvedPath}`);
+          return cachedData;
+        }
+      } catch (err) {
+        this.logger.error(
+          `Error reading GET from cache: ${err?.message || err}`,
+        );
+      }
+    }
 
     const token = await this.fetchAccessToken(isRetry);
 
@@ -174,6 +256,13 @@ export class ScrymeService {
         );
         this.cachedToken = null;
         this.tokenExpiresAt = null;
+        try {
+          await this.cacheService.del("scryme:auth:token");
+        } catch (err) {
+          this.logger.error(
+            `Failed to delete token from cache on 401: ${err?.message || err}`,
+          );
+        }
         return this.request<T>(method, path, body, true);
       }
 
@@ -190,17 +279,38 @@ export class ScrymeService {
 
       // Handle empty response bodies (e.g., 204 No Content or empty DELETE responses)
       if (response.status === HttpStatus.NO_CONTENT) {
+        if (!isGet) {
+          await this.invalidateCacheForPath(resolvedPath);
+        }
         return {} as T;
       }
 
       const text = await response.text();
       if (!text) {
+        if (!isGet) {
+          await this.invalidateCacheForPath(resolvedPath);
+        }
         return {} as T;
       }
 
       try {
-        return JSON.parse(text) as T;
-      } catch (jsonError) {
+        const result = JSON.parse(text) as T;
+
+        if (isGet) {
+          try {
+            await this.cacheService.set(cacheKey, result, 3600); // cache for 1 hour
+          } catch (err) {
+            this.logger.error(
+              `Error caching GET response: ${err?.message || err}`,
+            );
+          }
+        } else {
+          // Mutation request succeeded, invalidate relevant cache
+          await this.invalidateCacheForPath(resolvedPath);
+        }
+
+        return result;
+      } catch {
         this.logger.error(`Failed to parse response JSON from ${url}`);
         throw new HttpException(
           "Invalid JSON response from Scryme API",
