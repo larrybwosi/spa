@@ -9,9 +9,12 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
     "env:generate": "node generate-env.js",
-    "generate": "turbo run generate"
+    "generate": "turbo run generate",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.1",
     "prettier": "^3.7.4",
     "turbo": "^2.10.6",
     "typescript": "5.9.2"
