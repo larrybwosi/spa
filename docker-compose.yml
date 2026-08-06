@@ -18,7 +18,7 @@ services:
       timeout: 5s
       retries: 5
   api:
-    image: ghcr.io/larrybwosi/spa/api:latest
+    image: ghcr.io/larrybwosi/spa/api:${VERSION:-latest}
     container_name: spa-nestjs-api
     restart: always
     ports:
@@ -37,7 +37,7 @@ services:
       db:
         condition: service_healthy
   web:
-    image: ghcr.io/larrybwosi/spa/web:latest
+    image: ghcr.io/larrybwosi/spa/web:${VERSION:-latest}
     container_name: spa-nextjs-web
     restart: always
     ports:
