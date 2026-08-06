@@ -1,20 +1,15 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import Link from "next/link";
 import { Input } from "@repo/ui/input";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
 import useSWR from "swr";
 import { defaultFetcher } from "../swr-fetcher";
 import { FALLBACK_PRODUCTS, Product, slugify } from "./product-data";
-import {
-  Sparkles,
-  ChevronRight,
-  Search,
-  SlidersHorizontal,
-  Star,
-} from "lucide-react";
+// import { ProductCard } from "./ProductCard";
+import { Search, SlidersHorizontal } from "lucide-react";
+import { ProductCard } from "../../components/ProductCard";
 
 interface ApiProduct {
   id: string;
@@ -37,17 +32,13 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [sortBy, setSortBy] = useState<string>("featured");
 
-  // Fetch products with SWR
   const { data: apiProducts } = useSWR(
     "http://localhost:3001/api/products",
     defaultFetcher,
   );
 
-  console.log(apiProducts);
-
   const products = useMemo(() => {
     if (Array.isArray(apiProducts) && apiProducts.length > 0) {
-      // Map backend products to include frontend details, or use if already detailed
       const mapped: Product[] = apiProducts.map((apiProd: ApiProduct) => {
         const fallbackMatch = FALLBACK_PRODUCTS.find(
           (fp) =>
@@ -80,7 +71,6 @@ export default function ProductsPage() {
         };
       });
 
-      // Add any fallback products that are not present in backend products so we have a rich catalogs list
       const uniqueFallbacks = FALLBACK_PRODUCTS.filter(
         (fp) =>
           !mapped.some((m) => m.name.toLowerCase() === fp.name.toLowerCase()),
@@ -91,7 +81,6 @@ export default function ProductsPage() {
     return FALLBACK_PRODUCTS;
   }, [apiProducts]);
 
-  // Filter & sort logic
   const filteredProducts = products
     .filter((prod) => {
       const matchesSearch =
@@ -108,64 +97,75 @@ export default function ProductsPage() {
       if (sortBy === "price-low") return a.price - b.price;
       if (sortBy === "price-high") return b.price - a.price;
       if (sortBy === "rating") return b.rating - a.rating;
-      return 0; // Default Featured
+      return 0;
     });
 
   const categories = ["All", "Wellness", "Footwear", "Apparel"];
 
   return (
-    <div className="relative min-h-screen bg-brand-cream text-brand-charcoal overflow-x-hidden font-sans selection:bg-brand-primary/20">
-      {/* HEADER / NAVIGATION */}
+    <div className="relative min-h-screen bg-[#F1ECE1] text-[#1C1B18] overflow-x-hidden font-sans selection:bg-[#A9784F]/25">
+      <style jsx global>{`
+        @import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600&display=swap");
+
+        .font-display {
+          font-family: "Fraunces", serif;
+          font-optical-sizing: auto;
+        }
+        .font-body {
+          font-family: "Inter", sans-serif;
+        }
+        .font-label {
+          font-family: "Space Grotesk", sans-serif;
+        }
+      `}</style>
+
       <Navbar navLinks={productsNavLinks} activeHref="/products" />
 
-      {/* HERO / HEADER AREA */}
-      <section className="relative bg-brand-card-cream/30 border-b border-brand-border/50 py-16 sm:py-24">
+      {/* HERO */}
+      <section className="relative bg-[#1C1B18] py-20 sm:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-primary/20 bg-brand-primary/5 mb-4 sm:mb-6 shadow-sm">
-            <Sparkles className="h-3 w-3 text-brand-primary" />
-            <span className="text-[10px] tracking-[0.25em] font-sans text-brand-primary uppercase font-bold">
-              THE AURA APOTHECARY & APPAREL
-            </span>
-          </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif text-brand-charcoal tracking-wide mb-6">
-            Bespoke Product Collection
+          <span className="text-[11px] font-label tracking-[0.3em] text-[#A9784F] uppercase font-semibold block mb-5">
+            The Apothecary &amp; Apparel
+          </span>
+          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl text-[#F1ECE1] leading-tight mb-6">
+            Bring the sanctuary
+            <br />
+            <span className="italic text-[#DCD3C2]/80">into daily life</span>
           </h1>
-          <p className="text-sm sm:text-base text-brand-charcoal/70 max-w-2xl mx-auto font-sans font-light leading-relaxed">
-            Nourish your skin, elevate your style, and restore body wellness.
-            Explore our intentionally curated selection of luxurious lifestyle
-            additions.
+          <p className="text-sm sm:text-base text-[#DCD3C2]/70 max-w-2xl mx-auto font-body font-light leading-relaxed">
+            Formulations we use in treatment rooms, and the few objects we'd put
+            our name behind. Nothing incidental, nothing filler.
           </p>
         </div>
       </section>
 
-      {/* CONTROLS (Search, Filter, Sort) */}
-      <section className="py-8 bg-brand-cream border-b border-brand-border/40 sticky top-20 z-10">
+      {/* CONTROLS */}
+      <section className="py-7 bg-[#F1ECE1] border-b border-[#1C1B18]/10 sticky top-20 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            {/* Left: Search & Filter Tabs */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-1">
-              {/* Search Bar */}
+              {/* Search */}
               <div className="relative max-w-md w-full">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-charcoal/40" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#1C1B18]/40" />
                 <Input
                   type="text"
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-3 bg-white border-brand-border/80 focus:border-brand-primary/60 rounded-lg text-sm shadow-xs"
+                  className="pl-10 pr-4 py-3 bg-white border-[#1C1B18]/15 focus:border-[#A9784F]/60 rounded-none text-sm font-body"
                 />
               </div>
 
-              {/* Categories Tabs */}
+              {/* Category tabs */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
                 {categories.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-4 py-2 rounded-lg text-xs uppercase tracking-wider font-semibold border transition-all duration-300 ${
+                    className={`px-4 py-2 text-[11px] font-label uppercase tracking-wider font-semibold border transition-all duration-300 whitespace-nowrap ${
                       selectedCategory === cat
-                        ? "bg-brand-primary border-brand-primary text-white shadow-xs"
-                        : "bg-white border-brand-border/70 text-brand-charcoal/70 hover:border-brand-primary/45 hover:text-brand-primary"
+                        ? "bg-[#1C1B18] border-[#1C1B18] text-[#F1ECE1]"
+                        : "bg-white border-[#1C1B18]/15 text-[#1C1B18]/65 hover:border-[#A9784F]/50 hover:text-[#A9784F]"
                     }`}
                   >
                     {cat}
@@ -174,13 +174,13 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Right: Sorting Select */}
+            {/* Sort */}
             <div className="flex items-center gap-2 md:self-end">
-              <SlidersHorizontal className="h-4 w-4 text-brand-charcoal/50" />
+              <SlidersHorizontal className="h-4 w-4 text-[#1C1B18]/45" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-white border border-brand-border/80 text-brand-charcoal/80 text-xs uppercase tracking-wider font-semibold rounded-lg px-3 py-2.5 outline-none focus:border-brand-primary/50 cursor-pointer shadow-xs"
+                className="bg-white border border-[#1C1B18]/15 text-[#1C1B18]/80 text-[11px] font-label uppercase tracking-wider font-semibold px-3 py-2.5 outline-none focus:border-[#A9784F]/50 cursor-pointer"
               >
                 <option value="featured">Featured</option>
                 <option value="price-low">Price: Low to High</option>
@@ -193,93 +193,26 @@ export default function ProductsPage() {
       </section>
 
       {/* PRODUCTS GRID */}
-      <main className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main className="py-20 sm:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-20 bg-white/40 border border-brand-border/60 rounded-xl max-w-xl mx-auto shadow-sm">
-            <h3 className="font-serif text-2xl text-brand-charcoal/75 mb-3">
-              No Products Found
+          <div className="text-center py-24 bg-white border border-[#1C1B18]/10 max-w-xl mx-auto">
+            <h3 className="font-display text-2xl text-[#1C1B18]/75 mb-3">
+              No products found
             </h3>
-            <p className="text-sm text-brand-charcoal/60 font-sans font-light">
-              We couldn&apos;t find any products matching your search criteria.
-              Try a different query.
+            <p className="text-sm text-[#1C1B18]/55 font-body font-light">
+              We couldn't find anything matching your search. Try a different
+              term or category.
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="group flex flex-col bg-white border border-brand-border/65 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-brand-primary/30"
-              >
-                {/* Product Image container */}
-                <Link
-                  href={`/products/${product.slug}`}
-                  className="relative aspect-square w-full bg-brand-cream/30 overflow-hidden block"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs border border-brand-border/60 px-2.5 py-1 rounded-md text-[9px] font-sans font-bold uppercase tracking-widest text-brand-primary shadow-xs">
-                    {product.category}
-                  </div>
-                </Link>
-
-                {/* Product Info */}
-                <div className="p-5 flex flex-col flex-1">
-                  {/* Stars / Reviews */}
-                  <div className="flex items-center gap-1 mb-2.5">
-                    <div className="flex items-center text-amber-500">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-3 w-3 ${
-                            i < Math.floor(product.rating)
-                              ? "fill-amber-500"
-                              : "text-gray-200"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-[10px] font-sans text-brand-charcoal/50 font-medium">
-                      ({product.reviewsCount})
-                    </span>
-                  </div>
-
-                  {/* Title & Price */}
-                  <div className="block flex-1 group-hover:text-brand-primary transition-colors">
-                    <Link href={`/products/${product.slug}`} className="block">
-                      <h3 className="font-serif text-lg text-brand-charcoal font-medium line-clamp-1 mb-1 tracking-wide leading-tight">
-                        {product.name}
-                      </h3>
-                    </Link>
-                    <p className="text-xs sm:text-sm text-brand-charcoal/60 font-sans font-light line-clamp-2 leading-relaxed mb-4">
-                      {product.description}
-                    </p>
-                  </div>
-
-                  <div className="pt-4 border-t border-brand-border/40 flex items-center justify-between mt-auto">
-                    <span className="font-serif text-base sm:text-lg text-brand-charcoal font-semibold">
-                      ${product.price.toFixed(2)}
-                    </span>
-                    <Link
-                      href={`/products/${product.slug}`}
-                      className="text-[10px] sm:text-xs uppercase tracking-widest text-brand-primary font-bold hover:text-brand-primary-hover flex items-center gap-1 group/btn"
-                    >
-                      <span>View Details</span>
-                      <ChevronRight className="h-3.5 w-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}
       </main>
 
-      {/* FOOTER */}
       <Footer />
     </div>
   );

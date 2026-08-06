@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@repo/ui/button";
 import { Navbar } from "../components/Navbar";
@@ -9,12 +9,9 @@ import {
   MapPin,
   ArrowRight,
   ArrowUpRight,
-  Sparkles,
   ChevronRight,
-  PhoneCall,
   Clock,
-  ShieldCheck,
-  Star
+  Star,
 } from "lucide-react";
 import { FALLBACK_SERVICES } from "./services/services-data";
 import { FALLBACK_PRODUCTS } from "./products/product-data";
@@ -27,491 +24,742 @@ const homeNavLinks = [
   { label: "Location", href: "#location" },
 ];
 
+/* ---------------------------------------------------------
+   Reveal — scroll-triggered fade/lift wrapper.
+   One primitive, reused everywhere, so motion feels
+   orchestrated rather than scattered.
+--------------------------------------------------------- */
+function Reveal({
+  children,
+  delay = 0,
+  className = "",
+  as: Tag = "div",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+  as?: keyof JSX.IntrinsicElements;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.unobserve(el);
+        }
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -40px 0px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <Tag
+      ref={ref as never}
+      className={className}
+      style={{
+        transitionProperty: "opacity, transform",
+        transitionDuration: "800ms",
+        transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
+        transitionDelay: `${delay}ms`,
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0px)" : "translateY(28px)",
+      }}
+    >
+      {children}
+    </Tag>
+  );
+}
+
+/* ---------------------------------------------------------
+   CountUp — animates a numeric value in once visible.
+   Preserves the original string's suffix (+, %, k+ etc).
+--------------------------------------------------------- */
+function CountUp({ value }: { value: string }) {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const [display, setDisplay] = useState(() =>
+    value.replace(/[0-9.]/g, (c) => (c ? "0" : c)),
+  );
+  const match = value.match(/^([\d.]+)(.*)$/);
+  const target = match ? parseFloat(match[1]) : 0;
+  const suffix = match ? match[2] : "";
+  const decimals =
+    match && match[1].includes(".") ? match[1].split(".")[1].length : 0;
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        observer.unobserve(el);
+
+        const reduceMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+        if (reduceMotion) {
+          setDisplay(value);
+          return;
+        }
+
+        const duration = 1400;
+        const start = performance.now();
+
+        const tick = (now: number) => {
+          const progress = Math.min((now - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const current = target * eased;
+          setDisplay(
+            `${decimals ? current.toFixed(decimals) : Math.round(current)}${suffix}`,
+          );
+          if (progress < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return <span ref={ref}>{display}</span>;
+}
+
+/* ---------------------------------------------------------
+   MagneticButton — CTA subtly tracks the cursor within
+   its bounds. Reads as considered, not gimmicky, because
+   it's used exactly once, on the primary hero action.
+--------------------------------------------------------- */
+function MagneticButton({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+    setOffset({ x: x * 0.18, y: y * 0.35 });
+  };
+
+  const reset = () => setOffset({ x: 0, y: 0 });
+
+  return (
+    <div
+      ref={ref}
+      onMouseMove={handleMove}
+      onMouseLeave={reset}
+      style={{
+        transform: `translate(${offset.x}px, ${offset.y}px)`,
+        transition: "transform 300ms cubic-bezier(0.16, 1, 0.3, 1)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function Home() {
   return (
-    <div className="relative min-h-screen bg-brand-cream text-brand-charcoal overflow-x-hidden font-sans selection:bg-brand-primary/20">
+    <div className="relative min-h-screen bg-[#F1ECE1] text-[#1C1B18] overflow-x-hidden font-sans selection:bg-[#A9784F]/25">
+      {/* Fonts + signature animations */}
+      <style jsx global>{`
+        @import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600&display=swap");
 
-      {/* NAVBAR */}
+        .font-display {
+          font-family: "Fraunces", serif;
+          font-optical-sizing: auto;
+        }
+        .font-body {
+          font-family: "Inter", sans-serif;
+        }
+        .font-label {
+          font-family: "Space Grotesk", sans-serif;
+        }
+
+        @keyframes breathe {
+          0%,
+          100% {
+            transform: scale(0.94);
+            opacity: 0.55;
+          }
+          50% {
+            transform: scale(1.08);
+            opacity: 0.9;
+          }
+        }
+        .breathing-glow {
+          animation: breathe 5.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+        }
+        @keyframes pulse-dot {
+          0%,
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.6);
+            opacity: 0.4;
+          }
+        }
+        .pulse-dot {
+          animation: pulse-dot 2.6s ease-in-out infinite;
+        }
+
+        @keyframes hero-in {
+          from {
+            opacity: 0;
+            transform: translateY(22px);
+            filter: blur(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+          }
+        }
+        .hero-in-1 {
+          animation: hero-in 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+        }
+        .hero-in-2 {
+          animation: hero-in 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+        }
+        .hero-in-3 {
+          animation: hero-in 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
+        }
+        .hero-in-4 {
+          animation: hero-in 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.85s both;
+        }
+
+        @keyframes marquee {
+          from {
+            transform: translateX(0);
+          }
+          to {
+            transform: translateX(-50%);
+          }
+        }
+        .marquee-track {
+          animation: marquee 32s linear infinite;
+        }
+
+        .ken-burns {
+          transition:
+            transform 1.8s cubic-bezier(0.25, 0.1, 0.25, 1),
+            filter 1.8s ease;
+        }
+        .group:hover .ken-burns {
+          transform: scale(1.12) translate(-1%, -1%);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .breathing-glow,
+          .pulse-dot,
+          .hero-in-1,
+          .hero-in-2,
+          .hero-in-3,
+          .hero-in-4,
+          .marquee-track,
+          .ken-burns {
+            animation: none !important;
+            transition: none !important;
+          }
+        }
+      `}</style>
+
       <Navbar navLinks={homeNavLinks} />
 
-      {/* HERO SECTION */}
-      <section className="relative min-h-[90vh] md:min-h-[85vh] lg:min-h-screen flex items-center justify-center pt-24 pb-28 md:py-0 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      {/* HERO */}
+      <section className="relative min-h-[92vh] flex items-center justify-center pt-24 pb-28 px-4 sm:px-6 lg:px-8 overflow-hidden bg-[#1C1B18]">
+        {/* Breathing glow — signature element */}
+        <div
+          aria-hidden
+          className="breathing-glow absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(169,120,79,0.35) 0%, rgba(63,79,65,0.18) 45%, transparent 72%)",
+          }}
+        />
 
-        {/* Background Image Container */}
         <div className="absolute inset-0 z-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=2070"
-            alt="Luxury Spa thermal pool background"
-            className="w-full h-full object-cover object-center brightness-50 scale-105 animate-subtle-zoom"
+            src="https://images.unsplash.com/photo-1702312721918-62235a0b77d2?w=500&auto=format&fit=crop"
+            alt="Still thermal pool at dusk"
+            className="w-full h-full object-cover object-center opacity-[0.38] mix-blend-luminosity scale-105"
           />
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px]"></div>
-          <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-brand-cream via-brand-cream/80 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-[#1C1B18]/40 via-[#1C1B18]/55 to-[#1C1B18]" />
         </div>
 
-        {/* Hero Content */}
-        <div className="relative z-10 max-w-5xl mx-auto text-center text-white px-4">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-white/10 backdrop-blur-md mb-6 sm:mb-8 animate-fade-in shadow-inner">
-            <Sparkles className="h-3.5 w-3.5 text-brand-sage animate-pulse" />
-            <span className="text-[10px] sm:text-xs tracking-[0.3em] font-sans text-brand-cream/90 uppercase font-semibold">
-              BESPOKE RITUALS & SERENITY
+        <div className="relative z-10 max-w-4xl mx-auto text-center px-4">
+          <div className="hero-in-1 flex items-center justify-center gap-2.5 mb-8">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#A9784F] pulse-dot" />
+            <span className="text-[11px] font-label tracking-[0.35em] text-[#DCD3C2]/80 uppercase">
+              Est. 2011 &mdash; Beverly Hills
             </span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl leading-none font-serif tracking-normal mb-8 max-w-4xl mx-auto font-extralight text-brand-cream drop-shadow-sm animate-fade-in-up">
-            Sanctuary of <br/>
-            <span className="font-serif italic font-normal text-brand-sage">Quiet Luxury</span>
+          <h1 className="hero-in-2 font-display text-5xl sm:text-7xl md:text-8xl leading-[0.95] tracking-tight text-[#F1ECE1] mb-8">
+            Sit still.
+            <br />
+            <span className="italic font-normal text-[#A9784F]">
+              Let the hour work.
+            </span>
           </h1>
 
-          <div className="flex flex-wrap justify-center gap-3 mb-10 max-w-xl mx-auto">
-            <span className="px-4 py-2 rounded-full border border-white/15 bg-black/20 backdrop-blur-md text-[10px] tracking-[0.15em] uppercase font-medium text-brand-cream flex items-center gap-1.5 shadow-sm">
-              <ShieldCheck className="h-3 w-3 text-brand-sage" />
-              Easy Access
-            </span>
-            <span className="px-4 py-2 rounded-full border border-white/15 bg-black/20 backdrop-blur-md text-[10px] tracking-[0.15em] uppercase font-medium text-brand-cream flex items-center gap-1.5 shadow-sm">
-              <PhoneCall className="h-3 w-3 text-brand-sage" />
-              Instant Support
-            </span>
-            <span className="px-4 py-2 rounded-full border border-white/15 bg-black/20 backdrop-blur-md text-[10px] tracking-[0.15em] uppercase font-medium text-brand-cream flex items-center gap-1.5 shadow-sm">
-              <Clock className="h-3 w-3 text-brand-sage" />
-              Dedicated Booking
-            </span>
-          </div>
-
-          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-brand-cream/90 max-w-2xl mx-auto font-sans font-light leading-relaxed mb-12 tracking-wide">
-            Escape the noise. Immerse yourself in a beautifully crafted wellness experience tailored intentionally to harmonize your body, mind, and spirit.
+          <p className="hero-in-3 font-body text-base sm:text-lg text-[#DCD3C2]/75 max-w-xl mx-auto leading-relaxed mb-12 font-light">
+            Aura is a sanctuary built around one idea: that rest, done properly,
+            is a craft. Every ritual is timed, sourced, and held by hand.
           </p>
 
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 max-w-md mx-auto sm:max-w-none">
-            <Button
-              asChild
-              className="w-full sm:w-auto text-xs uppercase tracking-[0.2em] px-10 py-6 bg-brand-primary hover:bg-brand-primary-hover border border-brand-primary text-white shadow-lg transition-transform hover:scale-[1.03] duration-300 rounded-lg font-medium"
-            >
-              <Link href="/booking">Book a Session</Link>
-            </Button>
+          <div className="hero-in-4 flex flex-col sm:flex-row justify-center items-center gap-4">
+            <MagneticButton>
+              <Button
+                asChild
+                className="w-full sm:w-auto text-xs font-label uppercase tracking-[0.2em] px-10 py-6 bg-[#A9784F] hover:bg-[#93673F] border-none text-[#1C1B18] font-semibold rounded-none transition-colors duration-300"
+              >
+                <Link href="/booking">Reserve a Ritual</Link>
+              </Button>
+            </MagneticButton>
             <Link
               href="/services"
-              className="w-full sm:w-auto text-xs uppercase tracking-[0.2em] px-10 py-3.5 border border-white/35 bg-white/5 hover:bg-white/10 text-white transition-all rounded-lg font-medium inline-flex items-center justify-center gap-2 hover:border-white/60"
+              className="w-full sm:w-auto text-xs font-label uppercase tracking-[0.2em] px-10 py-4 border border-[#DCD3C2]/30 text-[#F1ECE1] hover:border-[#DCD3C2]/70 hover:bg-[#F1ECE1]/5 transition-all duration-300 rounded-none inline-flex items-center justify-center gap-2"
             >
-              <span>Explore Treatments</span>
-              <ArrowRight className="h-3.5 w-3.5" />
+              <span>View Treatments</span>
+              <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
           </div>
         </div>
+
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
+          <span className="text-[10px] font-label tracking-[0.3em] text-[#DCD3C2]/50 uppercase">
+            Scroll
+          </span>
+          <div className="w-px h-10 bg-gradient-to-b from-[#DCD3C2]/60 to-transparent" />
+        </div>
       </section>
 
-      {/* FEATURED SERVICES SECTION */}
-      <section className="py-20 bg-brand-card-cream/30 border-t border-brand-border/40 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs tracking-[0.25em] font-sans text-brand-primary uppercase font-bold block mb-3">
-              RECOMMENDED TREATMENT RITUALS
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-serif text-brand-charcoal tracking-wide mb-4">
-              Featured Sanctuary Services
-            </h2>
-            <div className="w-16 h-[1.5px] bg-brand-primary/40 mx-auto mb-6"></div>
-            <p className="text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed">
-              Indulge in a carefully selected menu of physical and mental renewal experiences curated to alleviate stressors and align structural harmony.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {FALLBACK_SERVICES.slice(0, 3).map((service) => (
-              <Link
-                key={service.id}
-                href={`/services/${service.id}`}
-                className="group flex flex-col h-full bg-white rounded-xl overflow-hidden shadow-xs hover:shadow-md border border-brand-border/40 hover:border-brand-primary/20 transition-all duration-300"
-              >
-                {/* Image Container with Hover scale zoom */}
-                <div className="relative aspect-[4/3] w-full overflow-hidden bg-brand-cream/50">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={service.image}
-                    alt={service.name}
-                    className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-brand-charcoal/5 group-hover:bg-transparent transition-colors duration-300"></div>
-                </div>
-
-                {/* Card Info */}
-                <div className="flex flex-col flex-1 p-6 space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] tracking-[0.2em] font-sans uppercase font-bold text-brand-primary/80">
-                      {service.category}
-                    </span>
-                    <span className="text-xs font-sans text-brand-charcoal/50 flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {service.duration} mins
-                    </span>
-                  </div>
-
-                  <h3 className="text-lg sm:text-xl font-serif text-brand-charcoal group-hover:text-brand-primary transition-colors duration-300 leading-tight font-medium font-semibold">
-                    {service.name}
-                  </h3>
-
-                  <p className="text-xs sm:text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed flex-1 line-clamp-2">
-                    {service.description}
-                  </p>
-
-                  {/* View details footer CTA */}
-                  <div className="pt-4 border-t border-brand-border/40 flex items-center justify-between">
-                    <span className="font-serif text-sm sm:text-base text-brand-charcoal font-semibold">
-                      from ${service.price}
-                    </span>
-                    <div className="flex items-center gap-1 text-[10px] sm:text-xs uppercase tracking-[0.15em] font-sans font-bold text-brand-charcoal/80 group-hover:text-brand-primary transition-colors duration-300">
-                      <span>View Details</span>
-                      <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-                    </div>
-                  </div>
-                </div>
-              </Link>
+      {/* TRUST STRIP — quiet authority signal between hero and menu */}
+      <section className="bg-[#1C1B18] border-t border-[#DCD3C2]/10 py-6 overflow-hidden">
+        <div className="relative flex whitespace-nowrap">
+          <div className="marquee-track flex items-center gap-16 pr-16">
+            {[...Array(2)].map((_, dup) => (
+              <React.Fragment key={dup}>
+                {[
+                  "Condé Nast Traveler",
+                  "Robb Report",
+                  "Los Angeles Times",
+                  "Departures",
+                  "Well+Good",
+                  "Architectural Digest",
+                ].map((name) => (
+                  <span
+                    key={`${dup}-${name}`}
+                    className="text-[13px] font-display italic text-[#DCD3C2]/40 tracking-wide"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </React.Fragment>
             ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Button asChild variant="outline" className="rounded-lg h-11 px-8 uppercase tracking-widest font-semibold text-xs border-brand-border hover:bg-brand-primary hover:text-white transition-all">
-              <Link href="/services">View All Sanctuary Treatments</Link>
-            </Button>
           </div>
         </div>
       </section>
 
-      {/* FEATURED PRODUCTS SECTION */}
-      <section className="py-20 bg-brand-cream border-t border-brand-border/45 px-4 sm:px-6 lg:px-8">
+      {/* FEATURED SERVICES */}
+      <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#F1ECE1]">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs tracking-[0.25em] font-sans text-brand-primary uppercase font-bold block mb-3">
-              THE AURA APOTHECARY & WELLNESS
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-serif text-brand-charcoal tracking-wide mb-4">
-              Featured Luxury Products
-            </h2>
-            <div className="w-16 h-[1.5px] bg-brand-primary/40 mx-auto mb-6"></div>
-            <p className="text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed">
-              Bring the serene experience of our sanctuary to your daily rituals. Explore our handpicked bespoke formulations and wellness additions.
+          <Reveal className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-16 max-w-5xl">
+            <div>
+              <span className="text-[11px] font-label tracking-[0.3em] text-[#A9784F] uppercase font-semibold block mb-4">
+                The Menu
+              </span>
+              <h2 className="font-display text-4xl sm:text-5xl text-[#1C1B18] leading-tight">
+                Three rituals,
+                <br />
+                <span className="italic text-[#3F4F41]">chosen for you</span>
+              </h2>
+            </div>
+            <p className="text-sm text-[#1C1B18]/60 font-body font-light leading-relaxed max-w-sm">
+              A short list, deliberately. Everything on our menu is something
+              we'd recommend to a friend without hesitation.
             </p>
+          </Reveal>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#1C1B18]/10">
+            {FALLBACK_SERVICES.slice(0, 3).map((service, idx) => (
+              <Reveal key={service.id} delay={idx * 120} as="div">
+                <Link
+                  href={`/services/${service.id}`}
+                  className="group flex flex-col bg-[#F1ECE1] hover:bg-white transition-colors duration-300 h-full"
+                >
+                  <div className="relative aspect-[4/5] w-full overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={service.image}
+                      alt={service.name}
+                      className="ken-burns absolute inset-0 w-full h-full object-cover object-center grayscale-[0.3] group-hover:grayscale-0"
+                    />
+                    <span className="absolute top-5 left-5 font-display italic text-3xl text-white drop-shadow-md">
+                      0{idx + 1}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col flex-1 p-7 space-y-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-label tracking-[0.2em] uppercase font-semibold text-[#3F4F41]">
+                        {service.category}
+                      </span>
+                      <span className="text-xs font-body text-[#1C1B18]/45 flex items-center gap-1.5">
+                        <Clock className="h-3 w-3" />
+                        {service.duration} min
+                      </span>
+                    </div>
+
+                    <h3 className="font-display text-2xl text-[#1C1B18] leading-tight">
+                      {service.name}
+                    </h3>
+
+                    <p className="text-sm text-[#1C1B18]/60 font-body font-light leading-relaxed flex-1 line-clamp-2">
+                      {service.description}
+                    </p>
+
+                    <div className="pt-5 border-t border-[#1C1B18]/10 flex items-center justify-between">
+                      <span className="font-display text-lg text-[#1C1B18]">
+                        ${service.price}
+                      </span>
+                      <div className="flex items-center gap-1 text-[10px] font-label uppercase tracking-[0.15em] font-semibold text-[#A9784F]">
+                        <span>Details</span>
+                        <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </Reveal>
+            ))}
           </div>
 
+          <Reveal delay={200} className="text-center mt-16">
+            <Button
+              asChild
+              variant="outline"
+              className="rounded-none h-12 px-10 uppercase tracking-[0.2em] font-label font-semibold text-xs border-[#1C1B18]/20 hover:bg-[#1C1B18] hover:text-[#F1ECE1] transition-all duration-300"
+            >
+              <Link href="/services">View Full Menu</Link>
+            </Button>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* PHILOSOPHY */}
+      <section
+        id="philosophy"
+        className="py-24 sm:py-32 bg-[#1C1B18] px-4 sm:px-6 lg:px-8"
+      >
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
+          <Reveal className="lg:col-span-5 relative aspect-[3/4] overflow-hidden h-[480px] sm:h-[600px] w-full order-2 lg:order-1">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1000"
+              alt="Sanctuary reception, warm low light"
+              className="absolute inset-0 w-full h-full object-cover object-center"
+            />
+            <div className="absolute inset-0 border border-[#DCD3C2]/10" />
+          </Reveal>
+
+          <div className="lg:col-span-7 flex flex-col justify-center space-y-10 order-1 lg:order-2">
+            <Reveal className="space-y-5">
+              <span className="text-[11px] font-label tracking-[0.3em] text-[#A9784F] uppercase font-semibold block">
+                Our Philosophy
+              </span>
+              <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl text-[#F1ECE1] leading-[1.05]">
+                The art of doing
+                <br />
+                <span className="italic text-[#DCD3C2]/80">almost nothing</span>
+              </h2>
+            </Reveal>
+
+            <Reveal
+              delay={120}
+              className="space-y-6 text-base text-[#DCD3C2]/65 font-body font-light leading-relaxed max-w-xl"
+            >
+              <p>
+                We believe true health begins with uncompromised stillness. Our
+                sanctuary is built to filter out the noise of modern life
+                &mdash; where silence is treated as a material, and rest as a
+                craft.
+              </p>
+              <p className="italic font-display text-[#A9784F] text-xl leading-snug border-l border-[#A9784F]/40 pl-6 my-8 not-italic">
+                &ldquo;Our therapies are grounded in time-honored rituals. Every
+                second at Aura is held with you at the center.&rdquo;
+              </p>
+              <p>
+                Every ingredient is globally certified organic. Every therapist
+                is a licensed master of their craft. Nothing here is incidental.
+              </p>
+            </Reveal>
+
+            <Reveal
+              delay={240}
+              className="pt-8 border-t border-[#DCD3C2]/15 flex flex-wrap items-center gap-12 sm:gap-16"
+            >
+              {[
+                { value: "15+", label: "Years of Practice" },
+                { value: "100%", label: "Organic & Botanical" },
+                { value: "25k+", label: "Guests Restored" },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <span className="block font-display text-4xl sm:text-5xl text-[#A9784F] mb-1.5">
+                    <CountUp value={stat.value} />
+                  </span>
+                  <span className="block text-[10px] font-label tracking-[0.15em] text-[#DCD3C2]/50 font-semibold uppercase">
+                    {stat.label}
+                  </span>
+                </div>
+              ))}
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURED PRODUCTS */}
+      <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#F1ECE1]">
+        <div className="max-w-7xl mx-auto">
+          <Reveal className="text-center max-w-2xl mx-auto mb-16">
+            <span className="text-[11px] font-label tracking-[0.3em] text-[#A9784F] uppercase font-semibold block mb-4">
+              The Apothecary
+            </span>
+            <h2 className="font-display text-4xl sm:text-5xl text-[#1C1B18] leading-tight mb-5">
+              Bring the sanctuary home
+            </h2>
+            <p className="text-sm text-[#1C1B18]/60 font-body font-light leading-relaxed">
+              Formulations we use in treatment rooms, bottled for daily ritual.
+            </p>
+          </Reveal>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {FALLBACK_PRODUCTS.slice(3, 6).map((product) => (
-              <div
+            {FALLBACK_PRODUCTS.slice(3, 6).map((product, idx) => (
+              <Reveal
                 key={product.id}
-                className="group flex flex-col bg-white border border-brand-border/65 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-brand-primary/30"
+                delay={idx * 120}
+                className="group flex flex-col bg-white border border-[#1C1B18]/10 overflow-hidden hover:border-[#A9784F]/40 hover:shadow-[0_20px_40px_-20px_rgba(28,27,24,0.15)] transition-all duration-500 h-full"
               >
-                {/* Product Image container */}
-                <Link href={`/products/${product.slug}`} className="relative aspect-square w-full bg-brand-cream/30 overflow-hidden block">
+                <Link
+                  href={`/products/${product.slug}`}
+                  className="relative aspect-square w-full bg-[#DCD3C2]/20 overflow-hidden block"
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                    className="ken-burns h-full w-full object-cover object-center"
                   />
-                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs border border-brand-border/60 px-2.5 py-1 rounded-md text-[9px] font-sans font-bold uppercase tracking-widest text-brand-primary shadow-xs">
+                  <div className="absolute top-4 left-4 bg-[#1C1B18]/90 backdrop-blur-xs px-3 py-1.5 text-[9px] font-label font-semibold uppercase tracking-widest text-[#F1ECE1]">
                     {product.category}
                   </div>
                 </Link>
 
-                {/* Product Info */}
-                <div className="p-5 flex flex-col flex-1">
-                  {/* Stars / Reviews */}
-                  <div className="flex items-center gap-1 mb-2.5">
-                    <div className="flex items-center text-amber-500">
+                <div className="p-6 flex flex-col flex-1">
+                  <div className="flex items-center gap-1 mb-3">
+                    <div className="flex items-center text-[#A9784F]">
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
                           className={`h-3 w-3 ${
-                            i < Math.floor(product.rating) ? "fill-amber-500" : "text-gray-200"
+                            i < Math.floor(product.rating)
+                              ? "fill-[#A9784F]"
+                              : "text-[#1C1B18]/15"
                           }`}
                         />
                       ))}
                     </div>
-                    <span className="text-[10px] font-sans text-brand-charcoal/50 font-medium">
+                    <span className="text-[10px] font-body text-[#1C1B18]/45 font-medium">
                       ({product.reviewsCount})
                     </span>
                   </div>
 
-                  {/* Title & Description */}
-                  <div className="block flex-1">
-                    <Link href={`/products/${product.slug}`} className="block group-hover:text-brand-primary transition-colors">
-                      <h3 className="font-serif text-lg text-brand-charcoal font-medium line-clamp-1 mb-1 tracking-wide leading-tight font-semibold">
-                        {product.name}
-                      </h3>
-                    </Link>
-                    <p className="text-xs sm:text-sm text-brand-charcoal/60 font-sans font-light line-clamp-2 leading-relaxed mb-4">
+                  <Link
+                    href={`/products/${product.slug}`}
+                    className="block flex-1"
+                  >
+                    <h3 className="font-display text-xl text-[#1C1B18] line-clamp-1 mb-2 group-hover:text-[#A9784F] transition-colors duration-300">
+                      {product.name}
+                    </h3>
+                    <p className="text-sm text-[#1C1B18]/55 font-body font-light line-clamp-2 leading-relaxed mb-5">
                       {product.description}
                     </p>
-                  </div>
+                  </Link>
 
-                  {/* Price & Action */}
-                  <div className="pt-4 border-t border-brand-border/40 flex items-center justify-between mt-auto">
-                    <span className="font-serif text-base sm:text-lg text-brand-charcoal font-semibold">
+                  <div className="pt-5 border-t border-[#1C1B18]/10 flex items-center justify-between mt-auto">
+                    <span className="font-display text-lg text-[#1C1B18]">
                       ${product.price.toFixed(2)}
                     </span>
                     <Link
                       href={`/products/${product.slug}`}
-                      className="text-[10px] sm:text-xs uppercase tracking-widest text-brand-primary font-bold hover:text-brand-primary-hover flex items-center gap-1 group/btn"
+                      className="text-[10px] font-label uppercase tracking-widest text-[#A9784F] font-semibold hover:text-[#93673F] flex items-center gap-1 group/btn"
                     >
-                      <span>View Details</span>
+                      <span>Details</span>
                       <ChevronRight className="h-3.5 w-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                     </Link>
                   </div>
                 </div>
-
-              </div>
+              </Reveal>
             ))}
           </div>
 
-          <div className="text-center mt-12">
-            <Button asChild variant="outline" className="rounded-lg h-11 px-8 uppercase tracking-widest font-semibold text-xs border-brand-border hover:bg-brand-primary hover:text-white transition-all">
-              <Link href="/products">Explore Entire Apothecary Collection</Link>
+          <Reveal delay={200} className="text-center mt-16">
+            <Button
+              asChild
+              variant="outline"
+              className="rounded-none h-12 px-10 uppercase tracking-[0.2em] font-label font-semibold text-xs border-[#1C1B18]/20 hover:bg-[#1C1B18] hover:text-[#F1ECE1] transition-all duration-300"
+            >
+              <Link href="/products">Explore the Collection</Link>
             </Button>
-          </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* TESTIMONIALS SECTION */}
-      <section className="py-20 bg-brand-card-cream/30 border-t border-brand-border/45 px-4 sm:px-6 lg:px-8">
+      {/* TESTIMONIALS */}
+      <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#3F4F41]">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs tracking-[0.25em] font-sans text-brand-primary uppercase font-bold block mb-3">
-              CLIENT REFLECTIONS
+          <Reveal className="text-center max-w-2xl mx-auto mb-16">
+            <span className="text-[11px] font-label tracking-[0.3em] text-[#DCD3C2] uppercase font-semibold block mb-4">
+              Reflections
             </span>
-            <h2 className="text-3xl sm:text-4xl font-serif text-brand-charcoal tracking-wide mb-4">
-              Sanctuary Testimonials
+            <h2 className="font-display text-4xl sm:text-5xl text-[#F1ECE1] leading-tight">
+              What guests carry with them
             </h2>
-            <div className="w-16 h-[1.5px] bg-brand-primary/40 mx-auto mb-6"></div>
-            <p className="text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed">
-              Discover the transformative physical and sensory journeys experienced by our esteemed guests.
-            </p>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white border border-brand-border/60 rounded-xl p-8 shadow-xs relative flex flex-col justify-between">
-              <div>
-                <div className="flex items-center text-amber-500 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-amber-500" />
-                  ))}
-                </div>
-                <p className="text-sm text-brand-charcoal/80 font-sans font-light leading-relaxed italic mb-6">
-                  &ldquo;Aura Wellness is an absolute sanctuary. The Signature Swedish treatment completely melted away my physical strain. Every detail, from the botanical oil aroma selection to the peaceful lounge, is crafted with pure intentional luxury.&rdquo;
-                </p>
-              </div>
-              <div className="border-t border-brand-border/40 pt-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-brand-cream flex items-center justify-center font-serif text-brand-primary font-bold">
-                  AM
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#F1ECE1]/10">
+            {[
+              {
+                quote:
+                  "Aura is an absolute sanctuary. The Signature Swedish treatment completely melted away months of tension. Every detail is crafted with intention.",
+                name: "Alex Mercer",
+                initials: "AM",
+              },
+              {
+                quote:
+                  "Their custom Bloom Rose Oil is a small miracle. It hydrates deeply and restored my skin without ever feeling heavy. Pure, organic, considered.",
+                name: "Sophia Laurent",
+                initials: "SL",
+              },
+              {
+                quote:
+                  "The therapists are remarkable, and the location filters out the city entirely. The post-ritual herbal infusions are the quiet final touch.",
+                name: "Julian Drake",
+                initials: "JD",
+              },
+            ].map((t, idx) => (
+              <Reveal
+                key={t.name}
+                delay={idx * 120}
+                className="bg-[#3F4F41] p-9 flex flex-col justify-between h-full transition-colors duration-300 hover:bg-[#465A48]"
+              >
                 <div>
-                  <h4 className="font-serif text-sm font-semibold text-brand-charcoal">Alex Mercer</h4>
-                  <span className="text-[10px] tracking-wider uppercase font-sans text-brand-primary font-bold">Verified Sanctuary Guest</span>
+                  <div className="flex items-center text-[#A9784F] mb-5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-3.5 w-3.5 fill-[#A9784F]" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-[#DCD3C2]/85 font-body font-light leading-relaxed italic mb-8">
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
                 </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-brand-border/60 rounded-xl p-8 shadow-xs relative flex flex-col justify-between">
-              <div>
-                <div className="flex items-center text-amber-500 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-amber-500" />
-                  ))}
+                <div className="border-t border-[#DCD3C2]/15 pt-5 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#A9784F]/20 flex items-center justify-center font-display text-[#A9784F] font-semibold">
+                    {t.initials}
+                  </div>
+                  <div>
+                    <h4 className="font-display text-sm text-[#F1ECE1]">
+                      {t.name}
+                    </h4>
+                    <span className="text-[10px] font-label tracking-wider uppercase text-[#DCD3C2]/50 font-semibold">
+                      Verified Guest
+                    </span>
+                  </div>
                 </div>
-                <p className="text-sm text-brand-charcoal/80 font-sans font-light leading-relaxed italic mb-6">
-                  &ldquo;Their custom-blended Bloom Rose Oil is a miracle formulation. It hydrates deeply and has completely restored my skin glow without feeling heavy. I appreciate their commitment to 100% pure organic botanical active nutrients.&rdquo;
-                </p>
-              </div>
-              <div className="border-t border-brand-border/40 pt-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-brand-cream flex items-center justify-center font-serif text-brand-primary font-bold">
-                  SL
-                </div>
-                <div>
-                  <h4 className="font-serif text-sm font-semibold text-brand-charcoal">Sophia Laurent</h4>
-                  <span className="text-[10px] tracking-wider uppercase font-sans text-brand-primary font-bold">Verified Sanctuary Guest</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-brand-border/60 rounded-xl p-8 shadow-xs relative flex flex-col justify-between">
-              <div>
-                <div className="flex items-center text-amber-500 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-amber-500" />
-                  ))}
-                </div>
-                <p className="text-sm text-brand-charcoal/80 font-sans font-light leading-relaxed italic mb-6">
-                  &ldquo;A magnificent experience. The therapists are remarkably skilled, and the location provides absolute filter from metropolitan noise. The post-ritual relaxation bites and herbal infusions are sublime. A masterpiece of wellness.&rdquo;
-                </p>
-              </div>
-              <div className="border-t border-brand-border/40 pt-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-brand-cream flex items-center justify-center font-serif text-brand-primary font-bold">
-                  JD
-                </div>
-                <div>
-                  <h4 className="font-serif text-sm font-semibold text-brand-charcoal">Julian Drake</h4>
-                  <span className="text-[10px] tracking-wider uppercase font-sans text-brand-primary font-bold">Verified Sanctuary Guest</span>
-                </div>
-              </div>
-            </div>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CURATED INTRO SECTION */}
-      <section id="about" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
-        <div className="max-w-3xl mx-auto">
-          <span className="text-xs tracking-[0.25em] font-sans text-brand-primary uppercase block mb-4 font-bold">
-            WELCOME TO AURA
-          </span>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-brand-charcoal mb-6">
-            Bespoke Serenity & Quiet Luxury
-          </h2>
-          <div className="w-16 h-[1.5px] bg-brand-primary/40 mx-auto mb-6"></div>
-          <p className="text-sm sm:text-base text-brand-charcoal/70 leading-relaxed font-sans font-light max-w-2xl mx-auto mb-10">
-            Aura Wellness is designed as a sanctuary. We operate at the intersection of restorative physical therapy and quiet indulgence, ensuring that every touch is intentional and every ritual deeply transformative.
-          </p>
-          <div className="flex justify-center gap-4">
-            <Button asChild variant="outline" className="rounded-lg h-10 px-6 uppercase tracking-wider font-semibold text-xs border-brand-border hover:bg-brand-primary hover:text-white transition-all">
-              <Link href="/services">Our Treatments Menu</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* OUR PHILOSOPHY SECTION */}
-      <section id="philosophy" className="py-20 sm:py-28 md:py-36 bg-brand-card-cream/50 border-y border-brand-border/60 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
-
-          {/* Left Column: Elegant Vertical Image */}
-          <div className="lg:col-span-5 relative aspect-3/4 rounded-xl overflow-hidden shadow-md h-[450px] sm:h-[550px] lg:h-[650px] w-full">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1000"
-              alt="Luxury Spa reception"
-              className="absolute inset-0 w-full h-full object-cover object-center scale-102 hover:scale-105 transition-transform duration-700"
-            />
-            <div className="absolute inset-0 bg-brand-charcoal/5"></div>
-          </div>
-
-          {/* Right Column: Text & Stats */}
-          <div className="lg:col-span-7 flex flex-col justify-center space-y-8 lg:pr-6">
-            <div className="space-y-4">
-              <span className="text-xs tracking-[0.25em] font-sans text-brand-primary uppercase font-bold block">
-                OUR PHILOSOPHY
-              </span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif text-brand-charcoal leading-tight font-normal tracking-wide">
-                Art of Healing
-              </h2>
-              <div className="w-16 h-[1.5px] bg-brand-primary/40 mt-4"></div>
-            </div>
-
-            <div className="space-y-6 text-sm sm:text-base text-brand-charcoal/70 font-sans font-light leading-relaxed max-w-2xl">
-              <p>
-                At Aura Wellness, we hold that true health stems from profound, uncompromised inner peace. Our sanctuaries are meticulously sculpted to filter out the noise of modern life, offering an atmosphere where silence is celebrated and rejuvenation is treated as an art.
-              </p>
-              <p className="italic font-serif text-brand-primary text-base sm:text-lg pl-4 border-l-2 border-brand-primary/40 my-6">
-                &ldquo;Our touch is intentional. Our therapies are grounded in time-honored rituals. Every second at Aura is curated with you at the center.&rdquo;
-              </p>
-              <p>
-                We source only the finest globally certified organic ingredients and partner exclusively with licensed practitioners who are absolute masters of their crafts, ensuring that every touch is intentional and every ritual is deeply transformative.
-              </p>
-            </div>
-
-            {/* Statistics */}
-            <div className="pt-8 border-t border-brand-border/60 flex flex-wrap items-center gap-10 sm:gap-16">
-              <div>
-                <span className="block text-4xl sm:text-5xl font-serif text-brand-primary mb-1 font-semibold">
-                  15<span className="text-2xl sm:text-3xl font-light text-brand-primary/75">+</span>
-                </span>
-                <span className="block text-[10px] sm:text-xs tracking-[0.15em] text-brand-charcoal/60 font-bold uppercase">
-                  Years of Sanctuary
-                </span>
-              </div>
-              <div>
-                <span className="block text-4xl sm:text-5xl font-serif text-brand-primary mb-1 font-semibold">
-                  100%
-                </span>
-                <span className="block text-[10px] sm:text-xs tracking-[0.15em] text-brand-charcoal/60 font-bold uppercase">
-                  Organic & Botanical
-                </span>
-              </div>
-              <div>
-                <span className="block text-4xl sm:text-5xl font-serif text-brand-primary mb-1 font-semibold">
-                  25k<span className="text-2xl sm:text-3xl font-light text-brand-primary/75">+</span>
-                </span>
-                <span className="block text-[10px] sm:text-xs tracking-[0.15em] text-brand-charcoal/60 font-bold uppercase">
-                  Restored Spirits
-                </span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* LOCATION & SANCTUARY SECTION */}
-      <section id="location" className="py-20 sm:py-28 md:py-36 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      {/* LOCATION */}
+      <section
+        id="location"
+        className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-[#F1ECE1]"
+      >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
-
-          {/* Left Column: Location Details */}
           <div className="lg:col-span-5 space-y-8 order-2 lg:order-1">
-            <div className="space-y-4">
-              <span className="text-xs tracking-[0.25em] font-sans text-brand-primary uppercase font-bold block">
-                LOCATION
+            <Reveal className="space-y-4">
+              <span className="text-[11px] font-label tracking-[0.3em] text-[#A9784F] uppercase font-semibold block">
+                Find Us
               </span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-brand-charcoal leading-tight font-normal tracking-wide">
-                Visit Our Sanctuary
+              <h2 className="font-display text-4xl sm:text-5xl text-[#1C1B18] leading-tight">
+                Visit the Sanctuary
               </h2>
-              <div className="w-16 h-[1.5px] bg-brand-primary/40 mt-4"></div>
-              <p className="text-sm sm:text-base text-brand-charcoal/70 font-sans font-light leading-relaxed pt-2">
-                Situated inside the quiet corridors of the Wellness District, our sanctuary acts as an escape from the metropolis. Begin your retreat with us.
+              <p className="text-sm sm:text-base text-[#1C1B18]/60 font-body font-light leading-relaxed pt-2 max-w-md">
+                Set inside the quiet corridors of the Wellness District, away
+                from the pace of the city. Begin your retreat with us.
               </p>
-            </div>
+            </Reveal>
 
-            {/* Address box */}
-            <div className="flex items-start gap-4 p-6 rounded-lg bg-brand-card-cream/50 border border-brand-border/60 max-w-md shadow-xs">
-              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-brand-primary shrink-0 shadow-sm">
+            <Reveal
+              delay={120}
+              className="flex items-start gap-4 p-6 bg-white border border-[#1C1B18]/10 max-w-md"
+            >
+              <div className="w-11 h-11 rounded-full bg-[#3F4F41]/10 flex items-center justify-center text-[#3F4F41] shrink-0">
                 <MapPin className="h-5 w-5" />
               </div>
               <div className="space-y-1">
-                <h4 className="font-serif text-lg text-brand-charcoal font-medium">Aura Wellness Sanctuary</h4>
-                <p className="text-xs sm:text-sm text-brand-charcoal/70 font-sans font-light">
+                <h4 className="font-display text-lg text-[#1C1B18]">
+                  Aura Wellness Sanctuary
+                </h4>
+                <p className="text-xs sm:text-sm text-[#1C1B18]/60 font-body font-light">
                   123 Serene Lane, Wellness District, Beverly Hills, CA 90210
                 </p>
-                <span className="inline-block text-[10px] text-brand-primary uppercase font-bold tracking-wider pt-1">
-                  Complimentary valet parking included
+                <span className="inline-block text-[10px] text-[#A9784F] uppercase font-label font-semibold tracking-wider pt-1">
+                  Complimentary valet parking
                 </span>
               </div>
-            </div>
+            </Reveal>
 
-            {/* Directions Button */}
-            <div>
+            <Reveal delay={220}>
               <Button
                 onClick={() => window.open("https://maps.google.com", "_blank")}
-                className="flex items-center gap-2.5 text-xs uppercase tracking-[0.2em] bg-brand-primary text-white border border-brand-primary hover:bg-brand-primary-hover px-8 py-5 rounded-lg transition-transform hover:scale-[1.02] shadow-md cursor-pointer"
+                className="flex items-center gap-2.5 text-xs font-label uppercase tracking-[0.2em] bg-[#1C1B18] text-[#F1ECE1] hover:bg-[#1C1B18]/85 px-8 py-5 rounded-none transition-colors cursor-pointer"
               >
                 <span>Get Directions</span>
                 <ArrowUpRight className="h-4 w-4" />
               </Button>
-            </div>
+            </Reveal>
           </div>
 
-          {/* Right Column: Monochrome/Muted Spa Setup Image */}
-          <div className="lg:col-span-7 relative aspect-4/3 rounded-xl overflow-hidden shadow-md h-[300px] sm:h-[450px] w-full order-1 lg:order-2">
+          <Reveal
+            delay={100}
+            className="lg:col-span-7 relative aspect-[4/3] overflow-hidden h-[320px] sm:h-[480px] w-full order-1 lg:order-2"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&q=80&w=1000"
-              alt="Grayscale aesthetic spa product setup"
-              className="absolute inset-0 w-full h-full object-cover object-center grayscale contrast-105 scale-102 hover:scale-105 transition-transform duration-700"
+              alt="Sanctuary treatment room detail"
+              className="absolute inset-0 w-full h-full object-cover object-center"
             />
-            <div className="absolute inset-0 bg-black/10"></div>
-          </div>
-
+          </Reveal>
         </div>
       </section>
 
-      {/* FOOTER */}
       <Footer />
-
     </div>
   );
 }
