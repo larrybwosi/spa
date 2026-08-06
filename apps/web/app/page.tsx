@@ -1,20 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { Button } from "@repo/ui/button";
-import { Input } from "@repo/ui/input";
-import useSWR from "swr";
-import { fetcherWithCredentials } from "./swr-fetcher";
+import { Navbar } from "../components/Navbar";
+import { Footer } from "../components/Footer";
 import {
   MapPin,
   ArrowRight,
   ArrowUpRight,
-  Menu,
-  X,
   Sparkles,
-  CheckCircle,
-  Mail,
   ChevronRight,
   PhoneCall,
   Clock,
@@ -24,241 +19,20 @@ import {
 import { FALLBACK_SERVICES } from "./services/services-data";
 import { FALLBACK_PRODUCTS } from "./products/product-data";
 
-const InstagramIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    width="16"
-    height="16"
-    stroke="currentColor"
-    strokeWidth="2"
-    fill="none"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-  </svg>
-);
-
-const FacebookIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    width="16"
-    height="16"
-    stroke="currentColor"
-    strokeWidth="2"
-    fill="none"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-  </svg>
-);
+const homeNavLinks = [
+  { label: "About", href: "#about" },
+  { label: "Services", href: "/services" },
+  { label: "Products", href: "/products" },
+  { label: "Philosophy", href: "#philosophy" },
+  { label: "Location", href: "#location" },
+];
 
 export default function Home() {
-  // Mobile menu state
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Newsletter state
-  const [email, setEmail] = useState("");
-  const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
-
-  // User session with SWR
-  const { data: sessionData, mutate: mutateSession } = useSWR(
-    "http://localhost:3001/api/auth/session",
-    fetcherWithCredentials,
-    { shouldRetryOnError: false }
-  );
-  const user = sessionData?.user || null;
-
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      setNewsletterSubmitted(true);
-      setTimeout(() => {
-        setEmail("");
-      }, 3000);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await fetch("http://localhost:3001/api/auth/signout", {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (e) {
-      console.error(e);
-    }
-    mutateSession(null, { revalidate: false });
-  };
-
   return (
     <div className="relative min-h-screen bg-brand-cream text-brand-charcoal overflow-x-hidden font-sans selection:bg-brand-primary/20">
 
-      {/* HEADER / NAVIGATION */}
-      <header className="sticky top-0 z-40 bg-brand-cream/80 backdrop-blur-md border-b border-brand-border/60 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <span className="font-serif text-xl sm:text-2xl tracking-[0.25em] text-brand-primary group-hover:text-brand-primary-hover transition-colors font-semibold">
-              AURA WELLNESS
-            </span>
-          </Link>
-
-          {/* Desktop Nav Links */}
-          <nav className="hidden lg:flex items-center space-x-8 text-xs tracking-[0.2em] font-medium uppercase text-brand-charcoal/80">
-            <a href="#about" className="hover:text-brand-primary transition-colors py-2 relative group">
-              About
-              <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
-            </a>
-            <Link href="/services" className="hover:text-brand-primary transition-colors py-2 relative group">
-              Services
-              <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
-            </Link>
-            <Link href="/products" className="hover:text-brand-primary transition-colors py-2 relative group">
-              Products
-              <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
-            </Link>
-            <a href="#philosophy" className="hover:text-brand-primary transition-colors py-2 relative group">
-              Philosophy
-              <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
-            </a>
-            <a href="#location" className="hover:text-brand-primary transition-colors py-2 relative group">
-              Location
-              <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-brand-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></span>
-            </a>
-          </nav>
-
-          {/* Book Now CTA / Auth */}
-          <div className="hidden md:flex items-center gap-6">
-            {user ? (
-              <div className="flex items-center gap-4 border-r pr-6 border-brand-border/60">
-                <span className="text-[10px] uppercase tracking-widest font-sans text-brand-charcoal/70 font-semibold bg-brand-card-cream/50 px-3 py-1.5 rounded-full border border-brand-border">
-                  Hello, {user.name}
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="text-[10px] uppercase tracking-widest text-red-500 hover:text-red-700 transition-colors font-sans font-bold cursor-pointer"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <Link
-                href="/booking"
-                className="text-xs uppercase tracking-widest font-sans font-bold hover:text-brand-primary transition-colors text-brand-charcoal/85 cursor-pointer"
-              >
-                Sign In
-              </Link>
-            )}
-
-            <Button
-              asChild
-              variant="default"
-              className="text-xs uppercase tracking-[0.15em] bg-brand-primary text-white border border-brand-primary px-7 py-5 hover:bg-brand-primary-hover shadow-md hover:shadow-lg transition-all duration-300 rounded-lg font-medium"
-            >
-              <Link href="/booking">Book Now</Link>
-            </Button>
-          </div>
-
-          {/* Mobile Menu Hamburger */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 text-brand-charcoal hover:text-brand-primary transition-colors rounded-full hover:bg-brand-card-cream/40"
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
-        </div>
-      </header>
-
-      {/* MOBILE MENU DRAWER */}
-      <div
-        className={`fixed inset-0 z-30 bg-brand-cream/98 transition-all duration-500 ease-in-out transform lg:hidden ${
-          isMobileMenuOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
-        } pt-24 px-6 sm:px-12`}
-      >
-        <nav className="flex flex-col space-y-5 text-lg tracking-[0.15em] font-serif text-brand-charcoal">
-          <a
-            href="#about"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="hover:text-brand-primary transition-colors py-3 border-b border-brand-border/40 flex justify-between items-center group"
-          >
-            <span>About</span>
-            <ChevronRight className="h-4 w-4 text-brand-primary opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
-          </a>
-          <Link
-            href="/services"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="hover:text-brand-primary transition-colors py-3 border-b border-brand-border/40 flex justify-between items-center group"
-          >
-            <span>Services</span>
-            <ChevronRight className="h-4 w-4 text-brand-primary opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
-          </Link>
-          <Link
-            href="/products"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="hover:text-brand-primary transition-colors py-3 border-b border-brand-border/40 flex justify-between items-center group"
-          >
-            <span>Products</span>
-            <ChevronRight className="h-4 w-4 text-brand-primary opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
-          </Link>
-          <a
-            href="#philosophy"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="hover:text-brand-primary transition-colors py-3 border-b border-brand-border/40 flex justify-between items-center group"
-          >
-            <span>Philosophy</span>
-            <ChevronRight className="h-4 w-4 text-brand-primary opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
-          </a>
-          <a
-            href="#location"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="hover:text-brand-primary transition-colors py-3 border-b border-brand-border/40 flex justify-between items-center group"
-          >
-            <span>Location</span>
-            <ChevronRight className="h-4 w-4 text-brand-primary opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
-          </a>
-
-          {user ? (
-            <div className="py-4 border-b border-brand-border/40 flex items-center justify-between font-sans">
-              <span className="text-sm font-medium text-brand-charcoal/80 bg-brand-card-cream/50 px-3 py-1 rounded-full border border-brand-border">
-                Hello, {user.name}
-              </span>
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  handleLogout();
-                }}
-                className="text-xs uppercase tracking-widest text-red-500 font-bold"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <Link
-              href="/booking"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="hover:text-brand-primary text-left font-serif transition-colors py-4 border-b border-brand-border/40 text-lg flex justify-between items-center"
-            >
-              <span>Sign In</span>
-              <ChevronRight className="h-4 w-4 text-brand-primary" />
-            </Link>
-          )}
-
-          <div className="pt-8">
-            <Button
-              asChild
-              className="w-full text-xs uppercase tracking-[0.2em] bg-brand-primary text-white py-6 rounded-lg hover:bg-brand-primary-hover shadow-md"
-            >
-              <Link href="/booking" onClick={() => setIsMobileMenuOpen(false)}>Book Now</Link>
-            </Button>
-          </div>
-        </nav>
-      </div>
+      {/* NAVBAR */}
+      <Navbar navLinks={homeNavLinks} />
 
       {/* HERO SECTION */}
       <section className="relative min-h-[90vh] md:min-h-[85vh] lg:min-h-screen flex items-center justify-center pt-24 pb-28 md:py-0 px-4 sm:px-6 lg:px-8 overflow-hidden">
@@ -736,124 +510,7 @@ export default function Home() {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-brand-card-cream/60 border-t border-brand-border/60 pt-20 sm:pt-28 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-16 mb-20">
-
-            {/* Brand column */}
-            <div className="lg:col-span-4 space-y-6">
-              <span className="font-serif text-2xl tracking-[0.2em] text-brand-primary block font-semibold">
-                AURA WELLNESS
-              </span>
-              <p className="text-xs sm:text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed max-w-sm">
-                Elevating human consciousness and state of physical being through highly mindful organic therapies and quiet luxury care.
-              </p>
-              {/* Social icons */}
-              <div className="flex items-center gap-3">
-                <a
-                  href="#"
-                  className="w-10 h-10 rounded-full border border-brand-border/80 flex items-center justify-center text-brand-charcoal/65 hover:text-brand-primary hover:border-brand-primary transition-all shadow-xs bg-white"
-                  aria-label="Instagram"
-                >
-                  <InstagramIcon />
-                </a>
-                <a
-                  href="#"
-                  className="w-10 h-10 rounded-full border border-brand-border/80 flex items-center justify-center text-brand-charcoal/65 hover:text-brand-primary hover:border-brand-primary transition-all shadow-xs bg-white"
-                  aria-label="Facebook"
-                >
-                  <FacebookIcon />
-                </a>
-              </div>
-            </div>
-
-            {/* Explore column */}
-            <div className="lg:col-span-2 space-y-5">
-              <h4 className="text-[10px] tracking-[0.25em] font-sans font-bold uppercase text-brand-charcoal/50">
-                EXPLORE
-              </h4>
-              <ul className="space-y-3 text-xs sm:text-sm font-sans text-brand-charcoal/75">
-                <li>
-                  <a href="#about" className="hover:text-brand-primary transition-colors">About Us</a>
-                </li>
-                <li>
-                  <Link href="/services" className="hover:text-brand-primary transition-colors">Treatments Menu</Link>
-                </li>
-                <li>
-                  <a href="#philosophy" className="hover:text-brand-primary transition-colors">Philosophy</a>
-                </li>
-                <li>
-                  <a href="#location" className="hover:text-brand-primary transition-colors">Directions</a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Legal column */}
-            <div className="lg:col-span-2 space-y-5">
-              <h4 className="text-[10px] tracking-[0.25em] font-sans font-bold uppercase text-brand-charcoal/50">
-                LEGAL
-              </h4>
-              <ul className="space-y-3 text-xs sm:text-sm font-sans text-brand-charcoal/75">
-                <li>
-                  <a href="#" className="hover:text-brand-primary transition-colors">Privacy Policy</a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-brand-primary transition-colors">Terms of Service</a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-brand-primary transition-colors">Spa Etiquette</a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Newsletter column */}
-            <div className="lg:col-span-4 space-y-5">
-              <h4 className="text-[10px] tracking-[0.25em] font-sans font-bold uppercase text-brand-charcoal/50">
-                NEWSLETTER
-              </h4>
-              <p className="text-xs sm:text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed mb-4">
-                Subscribe to receive seasonal wellness insights, ritual announcements, and priority sanctuary bookings.
-              </p>
-
-              {newsletterSubmitted ? (
-                <div className="flex items-center gap-3 p-4 bg-brand-sage/40 rounded-lg border border-brand-sage/60 text-brand-sage-dark text-xs sm:text-sm animate-fade-in shadow-xs">
-                  <CheckCircle className="h-5 w-5 text-brand-sage-dark shrink-0" />
-                  <span>Thank you. Your email was successfully registered.</span>
-                </div>
-              ) : (
-                <form onSubmit={handleNewsletterSubmit} className="flex flex-col gap-2.5">
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40" />
-                    <Input
-                      type="email"
-                      placeholder="Your email address"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="bg-white border-brand-border text-brand-charcoal rounded-lg pl-11 py-5 h-11 focus-visible:ring-brand-primary/50 text-xs sm:text-sm shadow-inner"
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full text-[10px] sm:text-xs uppercase tracking-[0.2em] bg-brand-primary hover:bg-brand-primary-hover text-white border border-brand-primary py-5 rounded-lg shadow-md font-semibold cursor-pointer"
-                  >
-                    SUBSCRIBE
-                  </Button>
-                </form>
-              )}
-            </div>
-
-          </div>
-
-          {/* Bottom metadata */}
-          <div className="pt-8 border-t border-brand-border/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] sm:text-xs text-brand-charcoal/55 font-sans tracking-wider">
-            <span>© 2024 Aura Luxury Wellness Sanctuary. All rights reserved.</span>
-            <span className="italic font-serif">Designed with Intent</span>
-          </div>
-
-        </div>
-      </footer>
+      <Footer />
 
     </div>
   );
