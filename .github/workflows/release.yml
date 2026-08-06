@@ -54,6 +54,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Extract Version
+        id: extract_version
+        run: |
+          VERSION=$(jq -r .version apps/api/package.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -76,6 +82,7 @@ jobs:
           tags: |
             ghcr.io/larrybwosi/spa/api:latest
             ghcr.io/larrybwosi/spa/api:${{ github.sha }}
+            ghcr.io/larrybwosi/spa/api:${{ steps.extract_version.outputs.version }}
 
       - name: Build and Push Web Image
         uses: docker/build-push-action@v6
@@ -86,3 +93,4 @@ jobs:
           tags: |
             ghcr.io/larrybwosi/spa/web:latest
             ghcr.io/larrybwosi/spa/web:${{ github.sha }}
+            ghcr.io/larrybwosi/spa/web:${{ steps.extract_version.outputs.version }}
