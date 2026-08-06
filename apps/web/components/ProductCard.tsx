@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Star, ChevronRight } from "lucide-react";
+import { Product } from "../app/products/product-data";
 
 interface ProductCardProps {
   product: Product;
