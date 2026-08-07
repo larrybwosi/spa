@@ -45,8 +45,8 @@ importers:
         specifier: ^7.9.1
         version: 7.9.1(prisma@7.9.1(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.2))(typescript@5.9.2)
       '@scryme/sdk':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^9.64.2
+        version: 9.64.2
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
@@ -2265,8 +2265,8 @@ packages:
       react-redux:
         optional: true
 
-  '@scryme/sdk@0.1.0':
-    resolution: {integrity: sha512-uOlndW6axhDufut4m0lVnNjxUZaHMSkW7q3LMFS6T4UQiecG9qLQVzDM+qBdRBf0FO99/ibcUEgYXf57DHeJHw==}
+  '@scryme/sdk@9.64.2':
+    resolution: {integrity: sha512-a+Sidcl3L5LBz7GhtSlxFzn1PpxE8gAvF1UUpvpcmHhxupXLN0xPJt/k3iLiAZ1/tJ1WHDfKs9fZg9UHHFhPCg==}
 
   '@sinclair/typebox@0.34.52':
     resolution: {integrity: sha512-XiMQh7qqVlxZzcVD+kkGMNGMzcTrDMLWI7S4x7z1MkCkbDPrekpZXEUK0eZqZFMuHQg2a2DZOcDIh9o5v3Gonw==}
@@ -8383,7 +8383,7 @@ snapshots:
       react: 19.2.0
       react-redux: 9.3.0(@types/react@19.2.2)(react@19.2.0)(redux@5.0.1)
 
-  '@scryme/sdk@0.1.0':
+  '@scryme/sdk@9.64.2':
     dependencies:
       axios: 1.19.0
     transitivePeerDependencies:
