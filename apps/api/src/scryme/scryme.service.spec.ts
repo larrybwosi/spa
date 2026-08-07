@@ -38,9 +38,11 @@ describe("ScrymeService OAuth Token Exchange & Catalog Tests", () => {
   });
 
   it("should call auth.authenticate on scrymeServer for fetchAccessToken", async () => {
-    const authSpy = jest.spyOn(service.scrymeServer.auth, "authenticate").mockResolvedValue({
-      token: "mocked-token-abc",
-    });
+    const authSpy = jest
+      .spyOn(service.scrymeServer.auth, "authenticate")
+      .mockResolvedValue({
+        token: "mocked-token-abc",
+      });
 
     const token = await service.fetchAccessToken();
     expect(token).toBe("mocked-token-abc");
@@ -48,7 +50,9 @@ describe("ScrymeService OAuth Token Exchange & Catalog Tests", () => {
   });
 
   it("should handle error in fetchAccessToken and return a fallback", async () => {
-    jest.spyOn(service.scrymeServer.auth, "authenticate").mockRejectedValue(new Error("Auth failed"));
+    jest
+      .spyOn(service.scrymeServer.auth, "authenticate")
+      .mockRejectedValue(new Error("Auth failed"));
 
     const token = await service.fetchAccessToken();
     expect(token).toBe("test-access-token");
@@ -58,13 +62,15 @@ describe("ScrymeService OAuth Token Exchange & Catalog Tests", () => {
     const mockProducts = [{ id: "p1", name: "Product 1" }];
 
     // Mock catalog.getProducts AxiosResponse
-    const getProductsSpy = jest.spyOn(service.scrymeServer.catalog, "getProducts").mockResolvedValue({
-      data: mockProducts,
-      status: 200,
-      statusText: "OK",
-      headers: {},
-      config: {} as any,
-    });
+    const getProductsSpy = jest
+      .spyOn(service.scrymeServer.catalog, "getProducts")
+      .mockResolvedValue({
+        data: mockProducts,
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {} as any,
+      });
 
     // Mock GET requests caching
     let hasGetCache = false;
@@ -94,17 +100,22 @@ describe("ScrymeService OAuth Token Exchange & Catalog Tests", () => {
     expect(getProductsSpy).toHaveBeenCalledTimes(1); // Should still be 1 (from first call)
 
     // Mutation request: create a product
-    const createProductSpy = jest.spyOn(service.scrymeServer.catalog, "createProduct").mockResolvedValue({
-      data: { id: "p2", name: "Product 2" },
-      status: 201,
-      statusText: "Created",
-      headers: {},
-      config: {} as any,
-    });
+    const createProductSpy = jest
+      .spyOn(service.scrymeServer.catalog, "createProduct")
+      .mockResolvedValue({
+        data: { id: "p2", name: "Product 2" },
+        status: 201,
+        statusText: "Created",
+        headers: {},
+        config: {} as any,
+      });
 
     await service.execute<any>(
       "/v3/{orgSlug}/catalog/products",
-      () => service.scrymeServer.catalog.createProduct({ name: "Product 2" } as any),
+      () =>
+        service.scrymeServer.catalog.createProduct({
+          name: "Product 2",
+        } as any),
       true,
     );
 

@@ -1,4 +1,4 @@
-import { Injectable, Logger, HttpException, HttpStatus } from "@nestjs/common";
+import { Injectable, Logger, HttpException } from "@nestjs/common";
 import { ScrymeCacheService } from "./scryme-cache.service";
 import { ScrymeServerSDK } from "@scryme/sdk/server";
 import { ScrymeClientSDK } from "@scryme/sdk/client";
@@ -11,7 +11,8 @@ export class ScrymeService {
 
   constructor(private readonly cacheService: ScrymeCacheService) {
     const clientId = process.env.SCRYME_CLIENT_ID || "test-scryme-client-id";
-    const clientSecret = process.env.SCRYME_CLIENT_SECRET || "test-scryme-client-secret";
+    const clientSecret =
+      process.env.SCRYME_CLIENT_SECRET || "test-scryme-client-secret";
     const orgSlug = process.env.SCRYME_ORG_SLUG || "spa-test-org";
     const baseURL = process.env.SCRYME_API_URL || "https://api.scryme.tech";
 
@@ -37,7 +38,7 @@ export class ScrymeService {
   /**
    * Keep this for backward compatibility (especially in existing tests).
    */
-  async fetchAccessToken(forceRefresh = false): Promise<string> {
+  async fetchAccessToken(): Promise<string> {
     try {
       const session = await this.scrymeServer.auth.authenticate();
       return session.token || session.accessToken || "test-access-token";
@@ -128,13 +129,13 @@ export class ScrymeService {
 
       return result;
     } catch (error) {
-      const message = error?.response?.data?.message || error?.message || "Unknown Scryme SDK error";
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Unknown Scryme SDK error";
       const status = error?.response?.status || 502;
       this.logger.error(`Scryme SDK error (${status}): ${message}`);
-      throw new HttpException(
-        `Scryme connection failure: ${message}`,
-        status,
-      );
+      throw new HttpException(`Scryme connection failure: ${message}`, status);
     }
   }
 
@@ -239,10 +240,11 @@ export class ScrymeService {
 
     return this.execute<any>(
       `/v3/{orgSlug}/services/staff/${memberId}/shifts`,
-      () => this.scrymeServer.catalog.createShift(memberId, {
-        ...dto,
-        dayOfWeek,
-      } as any),
+      () =>
+        this.scrymeServer.catalog.createShift(memberId, {
+          ...dto,
+          dayOfWeek,
+        } as any),
       true,
     );
   }
