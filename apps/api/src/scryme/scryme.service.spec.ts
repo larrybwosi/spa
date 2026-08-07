@@ -1,7 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ScrymeService } from "./scryme.service";
 import { ScrymeCacheService } from "./scryme-cache.service";
-import { HttpException } from "@nestjs/common";
 
 describe("ScrymeService OAuth Token Exchange & Catalog Tests", () => {
   let service: ScrymeService;
@@ -27,122 +26,68 @@ describe("ScrymeService OAuth Token Exchange & Catalog Tests", () => {
     }).compile();
 
     service = module.get<ScrymeService>(ScrymeService);
-
-    // Clear environment variables & caches
-    delete process.env.SCRYME_CLIENT_ID;
-    delete process.env.SCRYME_CLIENT_SECRET;
-    service["cachedToken"] = null;
-    service["tokenExpiresAt"] = null;
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it("should fall back to apiKey if SCRYME_CLIENT_ID or SCRYME_CLIENT_SECRET is missing", async () => {
-    process.env.SCRYME_API_KEY = "fallback-api-key";
-    const token = await service.fetchAccessToken();
-    expect(token).toBe("fallback-api-key");
+  it("should initialize client and server SDK instances", () => {
+    expect(service.scrymeServer).toBeDefined();
+    expect(service.scrymeClient).toBeDefined();
   });
 
-  it("should call fetch to exchange client credentials for token and cache it", async () => {
-    process.env.SCRYME_CLIENT_ID = "test-client-id";
-    process.env.SCRYME_CLIENT_SECRET = "test-client-secret";
-
-    const mockResponse = {
-      accessToken: "jwt-access-token-123",
-      tokenType: "Bearer",
-      expiresIn: 3600,
-    };
-
-    mockCacheService.get.mockResolvedValue(null);
-
-    const fetchSpy = jest.spyOn(global, "fetch").mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockResponse),
-    } as unknown as Response);
+  it("should call auth.authenticate on scrymeServer for fetchAccessToken", async () => {
+    const authSpy = jest
+      .spyOn(service.scrymeServer.auth, "authenticate")
+      .mockResolvedValue({
+        token: "mocked-token-abc",
+      });
 
     const token = await service.fetchAccessToken();
-    expect(token).toBe("jwt-access-token-123");
-    expect(fetchSpy).toHaveBeenCalledWith(
-      expect.stringContaining("/v3/auth/token"),
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({
-          clientId: "test-client-id",
-          clientSecret: "test-client-secret",
-        }),
-      }),
-    );
-
-    expect(mockCacheService.set).toHaveBeenCalledWith(
-      "scryme:auth:token",
-      "jwt-access-token-123",
-      3600,
-    );
-
-    // Call again, should return cached token from local memory without calling fetch or cacheService again
-    const token2 = await service.fetchAccessToken();
-    expect(token2).toBe("jwt-access-token-123");
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(token).toBe("mocked-token-abc");
+    expect(authSpy).toHaveBeenCalled();
   });
 
-  it("should return token from ScrymeCacheService if cached", async () => {
-    process.env.SCRYME_CLIENT_ID = "test-client-id";
-    process.env.SCRYME_CLIENT_SECRET = "test-client-secret";
-
-    mockCacheService.get.mockResolvedValue("cached-jwt-token");
+  it("should handle error in fetchAccessToken and return a fallback", async () => {
+    jest
+      .spyOn(service.scrymeServer.auth, "authenticate")
+      .mockRejectedValue(new Error("Auth failed"));
 
     const token = await service.fetchAccessToken();
-    expect(token).toBe("cached-jwt-token");
-    expect(mockCacheService.get).toHaveBeenCalledWith("scryme:auth:token");
-  });
-
-  it("should throw an error if token exchange fails", async () => {
-    process.env.SCRYME_CLIENT_ID = "test-client-id";
-    process.env.SCRYME_CLIENT_SECRET = "test-client-secret";
-
-    mockCacheService.get.mockResolvedValue(null);
-
-    jest.spyOn(global, "fetch").mockResolvedValue({
-      ok: false,
-      status: 401,
-      statusText: "Unauthorized",
-      text: () => Promise.resolve("Invalid client credentials"),
-    } as unknown as Response);
-
-    await expect(service.fetchAccessToken()).rejects.toThrow(HttpException);
+    expect(token).toBe("test-access-token");
   });
 
   it("should cache successful GET requests and invalidate on mutation requests", async () => {
-    process.env.SCRYME_CLIENT_ID = "test-client-id";
-    process.env.SCRYME_CLIENT_SECRET = "test-client-secret";
+    const mockProducts = [{ id: "p1", name: "Product 1" }];
 
-    // Mock GET requests & Token exchange using conditional mocking
+    // Mock catalog.getProducts AxiosResponse
+    const getProductsSpy = jest
+      .spyOn(service.scrymeServer.catalog, "getProducts")
+      .mockResolvedValue({
+        data: mockProducts,
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {} as any,
+      });
+
+    // Mock GET requests caching
     let hasGetCache = false;
-    const mockData = { items: [1, 2, 3] };
-
     mockCacheService.get.mockImplementation((key: string) => {
-      if (key === "scryme:auth:token") {
-        return Promise.resolve("mocked-token");
-      }
-      if (key === "scryme:req:GET:/v3/spa-test-org/customers") {
-        return Promise.resolve(hasGetCache ? mockData : null);
+      if (key === "scryme:req:GET:/v3/spa-test-org/catalog/products") {
+        return Promise.resolve(hasGetCache ? mockProducts : null);
       }
       return Promise.resolve(null);
     });
 
-    const fetchSpy = jest.spyOn(global, "fetch").mockResolvedValue({
-      ok: true,
-      text: () => Promise.resolve(JSON.stringify(mockData)),
-    } as unknown as Response);
-
     // First request: Cache miss
-    const result1 = await service.request("GET", "/v3/{orgSlug}/customers");
-    expect(result1).toEqual(mockData);
+    const result1 = await service.listCatalogProducts();
+    expect(result1).toEqual(mockProducts);
+    expect(getProductsSpy).toHaveBeenCalledTimes(1);
     expect(mockCacheService.set).toHaveBeenCalledWith(
-      "scryme:req:GET:/v3/spa-test-org/customers",
-      mockData,
+      "scryme:req:GET:/v3/spa-test-org/catalog/products",
+      mockProducts,
       3600,
     );
 
@@ -150,20 +95,33 @@ describe("ScrymeService OAuth Token Exchange & Catalog Tests", () => {
     hasGetCache = true;
 
     // Second request: Cache hit
-    const result2 = await service.request("GET", "/v3/{orgSlug}/customers");
-    expect(result2).toEqual(mockData);
+    const result2 = await service.listCatalogProducts();
+    expect(result2).toEqual(mockProducts);
+    expect(getProductsSpy).toHaveBeenCalledTimes(1); // Should still be 1 (from first call)
 
-    // Mutate request: POST customer register -> should invalidate pattern
-    fetchSpy.mockResolvedValueOnce({
-      ok: true,
-      text: () => Promise.resolve(JSON.stringify({ success: true })),
-    } as unknown as Response);
+    // Mutation request: create a product
+    const createProductSpy = jest
+      .spyOn(service.scrymeServer.catalog, "createProduct")
+      .mockResolvedValue({
+        data: { id: "p2", name: "Product 2" },
+        status: 201,
+        statusText: "Created",
+        headers: {},
+        config: {} as any,
+      });
 
-    await service.request("POST", "/v3/{orgSlug}/customers/register", {
-      name: "Bob",
-    });
+    await service.execute<any>(
+      "/v3/{orgSlug}/catalog/products",
+      () =>
+        service.scrymeServer.catalog.createProduct({
+          name: "Product 2",
+        } as any),
+      true,
+    );
+
+    expect(createProductSpy).toHaveBeenCalled();
     expect(mockCacheService.invalidatePattern).toHaveBeenCalledWith(
-      "scryme:req:GET:/v3/*/customers*",
+      "scryme:req:GET:/v3/*/catalog/products*",
     );
   });
 });
