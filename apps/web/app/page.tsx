@@ -33,22 +33,23 @@ function Reveal({
   children,
   delay = 0,
   className = "",
-  as: Tag = "div",
+  as: Component = "div",
 }: {
   children: React.ReactNode;
   delay?: number;
   className?: string;
-  as?: keyof JSX.IntrinsicElements;
+  as?: React.ElementType;
 }) {
-  const ref = useRef<HTMLDivElement | null>(null);
+  const ref = useRef<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
+      (entries) => {
+        const entry = entries[0];
+        if (entry && entry.isIntersecting) {
           setVisible(true);
           observer.unobserve(el);
         }
@@ -60,7 +61,7 @@ function Reveal({
   }, []);
 
   return (
-    <Tag
+    <Component
       ref={ref as never}
       className={className}
       style={{
@@ -73,7 +74,7 @@ function Reveal({
       }}
     >
       {children}
-    </Tag>
+    </Component>
   );
 }
 
@@ -87,17 +88,18 @@ function CountUp({ value }: { value: string }) {
     value.replace(/[0-9.]/g, (c) => (c ? "0" : c)),
   );
   const match = value.match(/^([\d.]+)(.*)$/);
-  const target = match ? parseFloat(match[1]) : 0;
-  const suffix = match ? match[2] : "";
+  const target = match && match[1] ? parseFloat(match[1]) : 0;
+  const suffix = match && match[2] ? match[2] : "";
   const decimals =
-    match && match[1].includes(".") ? match[1].split(".")[1].length : 0;
+    match && match[1] && match[1].includes(".") ? match[1].split(".")[1]?.length || 0 : 0;
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
+      (entries) => {
+        const entry = entries[0];
+        if (!entry || !entry.isIntersecting) return;
         observer.unobserve(el);
 
         const reduceMotion = window.matchMedia(

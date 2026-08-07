@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { ChevronRight, Clock } from "lucide-react";
-import { ServiceDetail } from "./services-data";
+import { ServiceDetail } from "../app/services/services-data";
 
 interface ServiceCardProps {
   service: ServiceDetail;

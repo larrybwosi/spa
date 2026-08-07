@@ -7,10 +7,14 @@ jobs:
   lint-and-typecheck:
     name: Lint & Typecheck
     runs-on: ubuntu-latest
+    env:
+      TURBO_SCM_BASE: origin/${{ github.base_ref || 'main' }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -28,7 +32,10 @@ jobs:
         run: DATABASE_URL=postgresql://dummy@localhost:5432/dummy pnpm --filter api exec prisma generate
 
       - name: Run Linting Checks
-        run: pnpm lint
+        run: pnpm exec turbo run lint --affected
 
       - name: Run Type Checking Checks
-        run: DATABASE_URL=postgresql://dummy@localhost:5432/dummy pnpm check-types
+        run: DATABASE_URL=postgresql://dummy@localhost:5432/dummy pnpm exec turbo run check-types --affected
+
+      - name: Run Tests
+        run: DATABASE_URL=postgresql://dummy@localhost:5432/dummy pnpm exec turbo run test --affected
