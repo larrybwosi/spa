@@ -45,8 +45,8 @@ importers:
         specifier: ^7.9.1
         version: 7.9.1(prisma@7.9.1(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.2))(typescript@5.9.2)
       '@scryme/sdk':
-        specifier: ^9.64.2
-        version: 9.64.2
+        specifier: ^9.65.0
+        version: 9.65.0(react@19.2.0)
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
@@ -2265,8 +2265,13 @@ packages:
       react-redux:
         optional: true
 
-  '@scryme/sdk@9.64.2':
-    resolution: {integrity: sha512-a+Sidcl3L5LBz7GhtSlxFzn1PpxE8gAvF1UUpvpcmHhxupXLN0xPJt/k3iLiAZ1/tJ1WHDfKs9fZg9UHHFhPCg==}
+  '@scryme/sdk@9.65.0':
+    resolution: {integrity: sha512-8TdIkW3Q/bYEin0VPxC8f0Jw6gGvAJF2j6UjjbQ+VRKkCiP0VLVIrwuUp9sl6kPSofpKjSeAPRb9KSPZEZQu1A==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      react:
+        optional: true
 
   '@sinclair/typebox@0.34.52':
     resolution: {integrity: sha512-XiMQh7qqVlxZzcVD+kkGMNGMzcTrDMLWI7S4x7z1MkCkbDPrekpZXEUK0eZqZFMuHQg2a2DZOcDIh9o5v3Gonw==}
@@ -8383,9 +8388,11 @@ snapshots:
       react: 19.2.0
       react-redux: 9.3.0(@types/react@19.2.2)(react@19.2.0)(redux@5.0.1)
 
-  '@scryme/sdk@9.64.2':
+  '@scryme/sdk@9.65.0(react@19.2.0)':
     dependencies:
       axios: 1.19.0
+    optionalDependencies:
+      react: 19.2.0
     transitivePeerDependencies:
       - debug
       - supports-color
