@@ -66,26 +66,11 @@ export class ProductsService {
   }
 
   async getAll() {
-    console.log("getAll called");
-    // If cache is valid, return cached products
-    if (
-      this.cachedProducts &&
-      this.cacheExpiresAt &&
-      this.cacheExpiresAt > Date.now()
-    ) {
-      console.log("cachedProducts", this.cachedProducts);
-      return this.cachedProducts;
-    }
-
     try {
-      this.logger.debug("Fetching products from Scryme...");
+      console.log("Fetching products from Scryme...");
       const scrymeProducts = await this.scrymeService.listCatalogProducts();
 
       console.log("scrymeProducts", scrymeProducts);
-
-      // Update cache
-      this.cachedProducts = scrymeProducts;
-      this.cacheExpiresAt = Date.now() + 60 * 60 * 1000; // 1 hour in ms
 
       // Synchronize in the background to ensure local Order consistency
       await this.syncProductsWithDb(scrymeProducts);
@@ -98,25 +83,11 @@ export class ProductsService {
       this.logger.error(
         `Failed to fetch products from Scryme: ${error.message}. Falling back to stale cache.`,
       );
-      // Fallback to stale cache if available
-      if (this.cachedProducts) {
-        this.logger.debug("Returning stale cached products as fallback.");
-        return this.cachedProducts;
-      }
       throw error;
     }
   }
 
   async getOne(id: string) {
-    // Attempt to get from cache first
-    if (this.cachedProducts) {
-      const found = this.cachedProducts.find((p) => p.id === id);
-      if (found) {
-        return found;
-      }
-    }
-
-    // Otherwise, fetch fresh products from Scryme and try to search again
     try {
       const freshProducts = await this.getAll();
       const foundFresh = freshProducts.find((p) => p.id === id);

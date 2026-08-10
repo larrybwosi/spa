@@ -10,11 +10,10 @@ export class ScrymeService {
   public readonly scrymeClient: ScrymeClientSDK;
 
   constructor(private readonly cacheService: ScrymeCacheService) {
-    const clientId = process.env.SCRYME_CLIENT_ID || "test-scryme-client-id";
-    const clientSecret =
-      process.env.SCRYME_CLIENT_SECRET || "test-scryme-client-secret";
-    const orgSlug = process.env.SCRYME_ORG_SLUG || "spa-test-org";
-    const baseURL = process.env.SCRYME_API_URL || "https://api.scryme.tech";
+    const clientId = process.env.SCRYME_CLIENT_ID!;
+    const clientSecret = process.env.SCRYME_CLIENT_SECRET!;
+    const orgSlug = process.env.SCRYME_ORG_SLUG!;
+    const baseURL = process.env.SCRYME_API_URL!;
 
     this.scrymeServer = new ScrymeServerSDK({
       clientId,
