@@ -59,7 +59,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
         <div className="pt-5 border-t border-[#1C1B18]/10 flex items-center justify-between mt-auto">
           <span className="font-display text-lg text-[#1C1B18]">
-            ${product.price.toFixed(2)}
+            Ksh {product.price.toFixed(2)}
           </span>
           <Link
             href={`/products/${product.slug}`}

@@ -305,7 +305,7 @@ export default function ServiceDetailPage() {
                 <div className="flex items-center gap-1">
                   <DollarSign className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-brand-primary/65" />
                   <span className="text-lg sm:text-xl font-bold text-brand-charcoal">
-                    ${activePrice}
+                    Ksh {activePrice}
                   </span>
                 </div>
               </div>
@@ -341,7 +341,7 @@ export default function ServiceDetailPage() {
                         {opt.duration} Mins
                       </span>
                       <span className="text-sm font-semibold">
-                        ${opt.price}
+                        Ksh {opt.price}
                       </span>
                     </button>
                   ))}

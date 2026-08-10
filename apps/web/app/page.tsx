@@ -91,7 +91,9 @@ function CountUp({ value }: { value: string }) {
   const target = match && match[1] ? parseFloat(match[1]) : 0;
   const suffix = match && match[2] ? match[2] : "";
   const decimals =
-    match && match[1] && match[1].includes(".") ? match[1].split(".")[1]?.length || 0 : 0;
+    match && match[1] && match[1].includes(".")
+      ? match[1].split(".")[1]?.length || 0
+      : 0;
 
   useEffect(() => {
     const el = ref.current;
@@ -294,7 +296,7 @@ export default function Home() {
         <div className="absolute inset-0 z-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://images.unsplash.com/photo-1702312721918-62235a0b77d2?w=500&auto=format&fit=crop"
+            src="/hero.png"
             alt="Still thermal pool at dusk"
             className="w-full h-full object-cover object-center opacity-[0.38] mix-blend-luminosity scale-105"
           />
@@ -305,7 +307,7 @@ export default function Home() {
           <div className="hero-in-1 flex items-center justify-center gap-2.5 mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-[#A9784F] pulse-dot" />
             <span className="text-[11px] font-label tracking-[0.35em] text-[#DCD3C2]/80 uppercase">
-              Est. 2011 &mdash; Beverly Hills
+              Est. 2026 &mdash; Beverly Hills
             </span>
           </div>
 
@@ -436,7 +438,7 @@ export default function Home() {
 
                     <div className="pt-5 border-t border-[#1C1B18]/10 flex items-center justify-between">
                       <span className="font-display text-lg text-[#1C1B18]">
-                        ${service.price}
+                        Ksh {service.price}
                       </span>
                       <div className="flex items-center gap-1 text-[10px] font-label uppercase tracking-[0.15em] font-semibold text-[#A9784F]">
                         <span>Details</span>
@@ -602,7 +604,7 @@ export default function Home() {
 
                   <div className="pt-5 border-t border-[#1C1B18]/10 flex items-center justify-between mt-auto">
                     <span className="font-display text-lg text-[#1C1B18]">
-                      ${product.price.toFixed(2)}
+                      Ksh {product.price.toFixed(2)}
                     </span>
                     <Link
                       href={`/products/${product.slug}`}

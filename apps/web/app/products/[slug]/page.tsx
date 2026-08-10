@@ -223,7 +223,7 @@ export default function ProductDetailPage() {
 
               <div className="flex flex-wrap items-center gap-4 sm:gap-6 pt-1">
                 <span className="font-display text-2xl sm:text-3xl text-[#1C1B18]">
-                  ${product.price.toFixed(2)}
+                  Ksh {product.price.toFixed(2)}
                 </span>
                 <div className="h-5 w-px bg-[#1C1B18]/15 hidden sm:block" />
                 <div className="flex items-center gap-2">
