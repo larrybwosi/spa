@@ -45,8 +45,8 @@ importers:
         specifier: ^7.9.1
         version: 7.9.1(prisma@7.9.1(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.2))(typescript@5.9.2)
       '@scryme/sdk':
-        specifier: ^9.65.0
-        version: 9.65.0(react@19.2.0)
+        specifier: ^9.66.0
+        version: 9.66.0(react@19.2.0)
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
@@ -2265,8 +2265,8 @@ packages:
       react-redux:
         optional: true
 
-  '@scryme/sdk@9.65.0':
-    resolution: {integrity: sha512-8TdIkW3Q/bYEin0VPxC8f0Jw6gGvAJF2j6UjjbQ+VRKkCiP0VLVIrwuUp9sl6kPSofpKjSeAPRb9KSPZEZQu1A==}
+  '@scryme/sdk@9.66.0':
+    resolution: {integrity: sha512-piG8F5SeZbw+BYEHLGi/tnxcHhnQuxOY9HN1nnVOF8FUap+aNWmyZTBmk7vchMwKg1cauwGd26RaqHfOqQ3lCA==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
     peerDependenciesMeta:
@@ -8388,7 +8388,7 @@ snapshots:
       react: 19.2.0
       react-redux: 9.3.0(@types/react@19.2.2)(react@19.2.0)(redux@5.0.1)
 
-  '@scryme/sdk@9.65.0(react@19.2.0)':
+  '@scryme/sdk@9.66.0(react@19.2.0)':
     dependencies:
       axios: 1.19.0
     optionalDependencies:
