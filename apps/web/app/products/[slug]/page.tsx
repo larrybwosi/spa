@@ -4,10 +4,12 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button } from "@repo/ui/button";
+import { Skeleton } from "@repo/ui/skeleton";
 import { Navbar } from "../../../components/Navbar";
 import { Footer } from "../../../components/Footer";
 import useSWR from "swr";
 import { defaultFetcher } from "../../swr-fetcher";
+import { API_ENDPOINTS } from "../../../lib/api";
 import {
   FALLBACK_PRODUCTS,
   Product,
@@ -56,7 +58,7 @@ export default function ProductDetailPage() {
     data: apiProducts,
     error: productsError,
     isLoading: productsLoading,
-  } = useSWR("http://localhost:3001/products", defaultFetcher);
+  } = useSWR(API_ENDPOINTS.products(), defaultFetcher);
 
   const product = useMemo(() => {
     if (Array.isArray(apiProducts)) {
@@ -95,15 +97,8 @@ export default function ProductDetailPage() {
         } as Product;
       }
     }
-
-    if (productsError || (!productsLoading && !apiProducts)) {
-      return FALLBACK_PRODUCTS.find((fp) => fp.slug === slug) || null;
-    }
-
     return null;
-  }, [apiProducts, productsError, productsLoading, slug]);
-
-  const loading = productsLoading && !apiProducts && !productsError;
+  }, [apiProducts, slug]);
 
   const incrementQuantity = () => setQuantity((prev) => prev + 1);
   const decrementQuantity = () =>
@@ -137,36 +132,79 @@ export default function ProductDetailPage() {
     `}</style>
   );
 
-  if (loading) {
+  if (productsLoading) {
     return (
-      <div className="min-h-screen bg-[#F1ECE1] text-[#1C1B18] flex items-center justify-center font-sans">
+      <div className="relative min-h-screen bg-[#F1ECE1] text-[#1C1B18] overflow-x-hidden font-sans selection:bg-[#A9784F]/25">
         {fontStyles}
-        <div className="text-center space-y-4">
-          <div className="w-10 h-10 border-2 border-[#A9784F] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-[11px] font-label uppercase tracking-widest text-[#1C1B18]/50 font-semibold">
-            Loading your sanctuary experience
-          </p>
-        </div>
+        <Navbar navLinks={productDetailNavLinks} activeHref="/products" />
+        {/* Breadcrumbs Skeleton */}
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+          <Skeleton className="h-4 w-64 rounded-none" />
+        </nav>
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-start">
+            {/* Image Skeleton */}
+            <div className="lg:col-span-6 relative aspect-square w-full">
+              <Skeleton className="w-full h-full rounded-none" />
+            </div>
+
+            {/* Details Skeleton */}
+            <div className="lg:col-span-6 space-y-8">
+              <div className="space-y-3.5">
+                <Skeleton className="h-4 w-32 rounded-none" />
+                <Skeleton className="h-12 w-3/4 rounded-none" />
+                <div className="flex items-center gap-4 pt-1">
+                  <Skeleton className="h-8 w-24 rounded-none" />
+                  <Skeleton className="h-6 w-32 rounded-none" />
+                </div>
+              </div>
+
+              <Skeleton className="h-px w-16" />
+
+              <div className="space-y-4">
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+
+              <div className="space-y-6 pt-2">
+                <div className="flex gap-4">
+                  <Skeleton className="h-12 w-32 rounded-none" />
+                  <Skeleton className="h-12 flex-1 rounded-none" />
+                </div>
+                <Skeleton className="h-4 w-64 rounded-none" />
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
 
-  if (!product) {
+  if (productsError || !product) {
     return (
-      <div className="min-h-screen bg-[#F1ECE1] text-[#1C1B18] flex flex-col items-center justify-center font-sans px-4">
+      <div className="relative min-h-screen bg-[#F1ECE1] text-[#1C1B18] overflow-x-hidden font-sans selection:bg-[#A9784F]/25">
         {fontStyles}
-        <h2 className="font-display text-3xl sm:text-4xl text-[#1C1B18] mb-4">
-          Product not found
-        </h2>
-        <p className="text-sm text-[#1C1B18]/55 font-body font-light mb-8 text-center max-w-md">
-          This product isn't in our catalog, or may be temporarily out of stock.
-        </p>
-        <Button
-          asChild
-          className="bg-[#1C1B18] text-[#F1ECE1] hover:bg-[#1C1B18]/85 px-8 py-5 text-xs font-label uppercase tracking-widest rounded-none"
-        >
-          <Link href="/products">Back to Collection</Link>
-        </Button>
+        <Navbar navLinks={productDetailNavLinks} activeHref="/products" />
+        <main className="py-24 sm:py-32 max-w-xl mx-auto px-4 text-center space-y-6">
+          <div className="inline-flex w-16 h-16 bg-[#A9784F]/10 text-[#A9784F] rounded-full items-center justify-center font-semibold">
+            <X className="h-6 w-6" />
+          </div>
+          <h2 className="font-display text-3xl sm:text-4xl text-[#1C1B18]">
+            Product Unavailable
+          </h2>
+          <p className="text-sm text-[#1C1B18]/65 font-body font-light leading-relaxed">
+            The requested luxury product is currently unavailable or doesn't exist in our collection.
+          </p>
+          <Button
+            asChild
+            className="text-xs font-label uppercase tracking-widest bg-[#1C1B18] text-[#F1ECE1] px-8 py-5 rounded-none hover:bg-[#1C1B18]/85 font-semibold"
+          >
+            <Link href="/products">Back to Collection</Link>
+          </Button>
+        </main>
+        <Footer />
       </div>
     );
   }

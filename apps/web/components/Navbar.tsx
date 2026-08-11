@@ -7,6 +7,7 @@ import { Button } from "@repo/ui/button";
 import { Menu, X, ChevronRight } from "lucide-react";
 import { fetcherWithCredentials } from "../app/swr-fetcher";
 import { motion, AnimatePresence } from "framer-motion";
+import { API_ENDPOINTS } from "../lib/api";
 
 export interface NavLink {
   label: string;
@@ -22,7 +23,7 @@ export function Navbar({ navLinks = [], activeHref }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const { data: sessionData, mutate: mutateSession } = useSWR(
-    "http://localhost:3001/api/auth/session",
+    API_ENDPOINTS.authSession(),
     fetcherWithCredentials,
     { shouldRetryOnError: false },
   );
@@ -30,7 +31,7 @@ export function Navbar({ navLinks = [], activeHref }: NavbarProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:3001/api/auth/signout", {
+      await fetch(API_ENDPOINTS.authSignout(), {
         method: "POST",
         credentials: "include",
       });
