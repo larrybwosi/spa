@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@repo/ui/button";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
+import { motion, useInView } from "framer-motion";
 import {
   MapPin,
   ArrowRight,
@@ -25,65 +26,45 @@ const homeNavLinks = [
 ];
 
 /* ---------------------------------------------------------
-   Reveal — scroll-triggered fade/lift wrapper.
-   One primitive, reused everywhere, so motion feels
-   orchestrated rather than scattered.
+   Reveal — scroll-triggered fade/lift wrapper using Framer Motion.
+   Replaces the previous hand-rolled intersection observer.
 --------------------------------------------------------- */
 function Reveal({
   children,
   delay = 0,
   className = "",
-  as: Component = "div",
 }: {
   children: React.ReactNode;
   delay?: number;
   className?: string;
   as?: React.ElementType;
 }) {
-  const ref = useRef<HTMLElement | null>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry && entry.isIntersecting) {
-          setVisible(true);
-          observer.unobserve(el);
-        }
-      },
-      { threshold: 0.15, rootMargin: "0px 0px -40px 0px" },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "0px 0px -40px 0px" });
 
   return (
-    <Component
-      ref={ref as never}
+    <motion.div
+      ref={ref}
       className={className}
-      style={{
-        transitionProperty: "opacity, transform",
-        transitionDuration: "800ms",
-        transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
-        transitionDelay: `${delay}ms`,
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0px)" : "translateY(28px)",
+      initial={{ opacity: 0, y: 28 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+      transition={{
+        duration: 0.8,
+        ease: [0.16, 1, 0.3, 1],
+        delay: delay / 1000,
       }}
     >
       {children}
-    </Component>
+    </motion.div>
   );
 }
 
 /* ---------------------------------------------------------
-   CountUp — animates a numeric value in once visible.
-   Preserves the original string's suffix (+, %, k+ etc).
+   CountUp — animates a numeric value in once visible using Framer Motion.
 --------------------------------------------------------- */
 function CountUp({ value }: { value: string }) {
-  const ref = useRef<HTMLSpanElement | null>(null);
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-10% 0px" });
   const [display, setDisplay] = useState(() =>
     value.replace(/[0-9.]/g, (c) => (c ? "0" : c)),
   );
@@ -96,53 +77,40 @@ function CountUp({ value }: { value: string }) {
       : 0;
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry || !entry.isIntersecting) return;
-        observer.unobserve(el);
+    if (!isInView) return;
 
-        const reduceMotion = window.matchMedia(
-          "(prefers-reduced-motion: reduce)",
-        ).matches;
-        if (reduceMotion) {
-          setDisplay(value);
-          return;
-        }
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (reduceMotion) {
+      setDisplay(value);
+      return;
+    }
 
-        const duration = 1400;
-        const start = performance.now();
+    const duration = 1400;
+    const start = performance.now();
 
-        const tick = (now: number) => {
-          const progress = Math.min((now - start) / duration, 1);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          const current = target * eased;
-          setDisplay(
-            `${decimals ? current.toFixed(decimals) : Math.round(current)}${suffix}`,
-          );
-          if (progress < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      },
-      { threshold: 0.4 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = target * eased;
+      setDisplay(
+        `${decimals ? current.toFixed(decimals) : Math.round(current)}${suffix}`,
+      );
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [isInView, target, suffix, decimals, value]);
 
   return <span ref={ref}>{display}</span>;
 }
 
 /* ---------------------------------------------------------
    MagneticButton — CTA subtly tracks the cursor within
-   its bounds. Reads as considered, not gimmicky, because
-   it's used exactly once, on the primary hero action.
+   its bounds using smooth motion transitions.
 --------------------------------------------------------- */
 function MagneticButton({ children }: { children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
   const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -157,17 +125,15 @@ function MagneticButton({ children }: { children: React.ReactNode }) {
   const reset = () => setOffset({ x: 0, y: 0 });
 
   return (
-    <div
+    <motion.div
       ref={ref}
       onMouseMove={handleMove}
       onMouseLeave={reset}
-      style={{
-        transform: `translate(${offset.x}px, ${offset.y}px)`,
-        transition: "transform 300ms cubic-bezier(0.16, 1, 0.3, 1)",
-      }}
+      animate={{ x: offset.x, y: offset.y }}
+      transition={{ type: "spring", damping: 15, stiffness: 150, mass: 0.1 }}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
@@ -218,31 +184,6 @@ export default function Home() {
           animation: pulse-dot 2.6s ease-in-out infinite;
         }
 
-        @keyframes hero-in {
-          from {
-            opacity: 0;
-            transform: translateY(22px);
-            filter: blur(6px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-            filter: blur(0);
-          }
-        }
-        .hero-in-1 {
-          animation: hero-in 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
-        }
-        .hero-in-2 {
-          animation: hero-in 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
-        }
-        .hero-in-3 {
-          animation: hero-in 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
-        }
-        .hero-in-4 {
-          animation: hero-in 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.85s both;
-        }
-
         @keyframes marquee {
           from {
             transform: translateX(0);
@@ -267,10 +208,6 @@ export default function Home() {
         @media (prefers-reduced-motion: reduce) {
           .breathing-glow,
           .pulse-dot,
-          .hero-in-1,
-          .hero-in-2,
-          .hero-in-3,
-          .hero-in-4,
           .marquee-track,
           .ken-burns {
             animation: none !important;
@@ -304,27 +241,47 @@ export default function Home() {
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center px-4">
-          <div className="hero-in-1 flex items-center justify-center gap-2.5 mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 22, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+            className="flex items-center justify-center gap-2.5 mb-8"
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-[#A9784F] pulse-dot" />
             <span className="text-[11px] font-label tracking-[0.35em] text-[#DCD3C2]/80 uppercase">
               Est. 2026 &mdash; Beverly Hills
             </span>
-          </div>
+          </motion.div>
 
-          <h1 className="hero-in-2 font-display text-5xl sm:text-7xl md:text-8xl leading-[0.95] tracking-tight text-[#F1ECE1] mb-8">
+          <motion.h1
+            initial={{ opacity: 0, y: 22, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
+            className="font-display text-5xl sm:text-7xl md:text-8xl leading-[0.95] tracking-tight text-[#F1ECE1] mb-8"
+          >
             Sit still.
             <br />
             <span className="italic font-normal text-[#A9784F]">
               Let the hour work.
             </span>
-          </h1>
+          </motion.h1>
 
-          <p className="hero-in-3 font-body text-base sm:text-lg text-[#DCD3C2]/75 max-w-xl mx-auto leading-relaxed mb-12 font-light">
+          <motion.p
+            initial={{ opacity: 0, y: 22, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.6 }}
+            className="font-body text-base sm:text-lg text-[#DCD3C2]/75 max-w-xl mx-auto leading-relaxed mb-12 font-light font-body"
+          >
             Aura is a sanctuary built around one idea: that rest, done properly,
             is a craft. Every ritual is timed, sourced, and held by hand.
-          </p>
+          </motion.p>
 
-          <div className="hero-in-4 flex flex-col sm:flex-row justify-center items-center gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 22, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.85 }}
+            className="flex flex-col sm:flex-row justify-center items-center gap-4"
+          >
             <MagneticButton>
               <Button
                 asChild
@@ -335,12 +292,12 @@ export default function Home() {
             </MagneticButton>
             <Link
               href="/services"
-              className="w-full sm:w-auto text-xs font-label uppercase tracking-[0.2em] px-10 py-4 border border-[#DCD3C2]/30 text-[#F1ECE1] hover:border-[#DCD3C2]/70 hover:bg-[#F1ECE1]/5 transition-all duration-300 rounded-none inline-flex items-center justify-center gap-2"
+              className="w-full sm:w-auto text-xs font-label uppercase tracking-[0.2em] px-10 py-4 border border-[#DCD3C2]/30 text-[#F1ECE1] hover:border-[#DCD3C2]/70 hover:bg-[#F1ECE1]/5 transition-all duration-300 rounded-none inline-flex items-center justify-center gap-2 font-body"
             >
               <span>View Treatments</span>
               <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
-          </div>
+          </motion.div>
         </div>
 
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
@@ -392,7 +349,7 @@ export default function Home() {
                 <span className="italic text-[#3F4F41]">chosen for you</span>
               </h2>
             </div>
-            <p className="text-sm text-[#1C1B18]/60 font-body font-light leading-relaxed max-w-sm">
+            <p className="text-sm text-[#1C1B18]/60 font-body font-light leading-relaxed max-w-sm font-body">
               A short list, deliberately. Everything on our menu is something
               we'd recommend to a friend without hesitation.
             </p>
@@ -400,7 +357,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#1C1B18]/10">
             {FALLBACK_SERVICES.slice(0, 3).map((service, idx) => (
-              <Reveal key={service.id} delay={idx * 120} as="div">
+              <Reveal key={service.id} delay={idx * 120}>
                 <Link
                   href={`/services/${service.id}`}
                   className="group flex flex-col bg-[#F1ECE1] hover:bg-white transition-colors duration-300 h-full"
@@ -422,7 +379,7 @@ export default function Home() {
                       <span className="text-[10px] font-label tracking-[0.2em] uppercase font-semibold text-[#3F4F41]">
                         {service.category}
                       </span>
-                      <span className="text-xs font-body text-[#1C1B18]/45 flex items-center gap-1.5">
+                      <span className="text-xs font-body text-[#1C1B18]/45 flex items-center gap-1.5 font-body">
                         <Clock className="h-3 w-3" />
                         {service.duration} min
                       </span>
@@ -432,7 +389,7 @@ export default function Home() {
                       {service.name}
                     </h3>
 
-                    <p className="text-sm text-[#1C1B18]/60 font-body font-light leading-relaxed flex-1 line-clamp-2">
+                    <p className="text-sm text-[#1C1B18]/60 font-body font-light leading-relaxed flex-1 line-clamp-2 font-body">
                       {service.description}
                     </p>
 
@@ -455,7 +412,7 @@ export default function Home() {
             <Button
               asChild
               variant="outline"
-              className="rounded-none h-12 px-10 uppercase tracking-[0.2em] font-label font-semibold text-xs border-[#1C1B18]/20 hover:bg-[#1C1B18] hover:text-[#F1ECE1] transition-all duration-300"
+              className="rounded-none h-12 px-10 uppercase tracking-[0.2em] font-label font-semibold text-xs border-[#1C1B18]/20 hover:bg-[#1C1B18] hover:text-[#F1ECE1] transition-all duration-300 animate-none"
             >
               <Link href="/services">View Full Menu</Link>
             </Button>
@@ -493,7 +450,7 @@ export default function Home() {
 
             <Reveal
               delay={120}
-              className="space-y-6 text-base text-[#DCD3C2]/65 font-body font-light leading-relaxed max-w-xl"
+              className="space-y-6 text-base text-[#DCD3C2]/65 font-body font-light leading-relaxed max-w-xl font-body"
             >
               <p>
                 We believe true health begins with uncompromised stillness. Our
@@ -544,7 +501,7 @@ export default function Home() {
             <h2 className="font-display text-4xl sm:text-5xl text-[#1C1B18] leading-tight mb-5">
               Bring the sanctuary home
             </h2>
-            <p className="text-sm text-[#1C1B18]/60 font-body font-light leading-relaxed">
+            <p className="text-sm text-[#1C1B18]/60 font-body font-light leading-relaxed font-body">
               Formulations we use in treatment rooms, bottled for daily ritual.
             </p>
           </Reveal>
@@ -585,7 +542,7 @@ export default function Home() {
                         />
                       ))}
                     </div>
-                    <span className="text-[10px] font-body text-[#1C1B18]/45 font-medium">
+                    <span className="text-[10px] font-body text-[#1C1B18]/45 font-medium font-body">
                       ({product.reviewsCount})
                     </span>
                   </div>
@@ -597,7 +554,7 @@ export default function Home() {
                     <h3 className="font-display text-xl text-[#1C1B18] line-clamp-1 mb-2 group-hover:text-[#A9784F] transition-colors duration-300">
                       {product.name}
                     </h3>
-                    <p className="text-sm text-[#1C1B18]/55 font-body font-light line-clamp-2 leading-relaxed mb-5">
+                    <p className="text-sm text-[#1C1B18]/55 font-body font-light line-clamp-2 leading-relaxed mb-5 font-body">
                       {product.description}
                     </p>
                   </Link>
@@ -623,7 +580,7 @@ export default function Home() {
             <Button
               asChild
               variant="outline"
-              className="rounded-none h-12 px-10 uppercase tracking-[0.2em] font-label font-semibold text-xs border-[#1C1B18]/20 hover:bg-[#1C1B18] hover:text-[#F1ECE1] transition-all duration-300"
+              className="rounded-none h-12 px-10 uppercase tracking-[0.2em] font-label font-semibold text-xs border-[#1C1B18]/20 hover:bg-[#1C1B18] hover:text-[#F1ECE1] transition-all duration-300 animate-none"
             >
               <Link href="/products">Explore the Collection</Link>
             </Button>
@@ -675,7 +632,7 @@ export default function Home() {
                       <Star key={i} className="h-3.5 w-3.5 fill-[#A9784F]" />
                     ))}
                   </div>
-                  <p className="text-sm text-[#DCD3C2]/85 font-body font-light leading-relaxed italic mb-8">
+                  <p className="text-sm text-[#DCD3C2]/85 font-body font-light leading-relaxed italic mb-8 font-body">
                     &ldquo;{t.quote}&rdquo;
                   </p>
                 </div>
@@ -712,7 +669,7 @@ export default function Home() {
               <h2 className="font-display text-4xl sm:text-5xl text-[#1C1B18] leading-tight">
                 Visit the Sanctuary
               </h2>
-              <p className="text-sm sm:text-base text-[#1C1B18]/60 font-body font-light leading-relaxed pt-2 max-w-md">
+              <p className="text-sm sm:text-base text-[#1C1B18]/60 font-body font-light leading-relaxed pt-2 max-w-md font-body">
                 Set inside the quiet corridors of the Wellness District, away
                 from the pace of the city. Begin your retreat with us.
               </p>
@@ -729,7 +686,7 @@ export default function Home() {
                 <h4 className="font-display text-lg text-[#1C1B18]">
                   Aura Wellness Sanctuary
                 </h4>
-                <p className="text-xs sm:text-sm text-[#1C1B18]/60 font-body font-light">
+                <p className="text-xs sm:text-sm text-[#1C1B18]/60 font-body font-light font-body">
                   123 Serene Lane, Wellness District, Beverly Hills, CA 90210
                 </p>
                 <span className="inline-block text-[10px] text-[#A9784F] uppercase font-label font-semibold tracking-wider pt-1">
@@ -741,7 +698,7 @@ export default function Home() {
             <Reveal delay={220}>
               <Button
                 onClick={() => window.open("https://maps.google.com", "_blank")}
-                className="flex items-center gap-2.5 text-xs font-label uppercase tracking-[0.2em] bg-[#1C1B18] text-[#F1ECE1] hover:bg-[#1C1B18]/85 px-8 py-5 rounded-none transition-colors cursor-pointer"
+                className="flex items-center gap-2.5 text-xs font-label uppercase tracking-[0.2em] bg-[#1C1B18] text-[#F1ECE1] hover:bg-[#1C1B18]/85 px-8 py-5 rounded-none transition-colors cursor-pointer animate-none"
               >
                 <span>Get Directions</span>
                 <ArrowUpRight className="h-4 w-4" />
