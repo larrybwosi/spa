@@ -16,8 +16,9 @@ import {
   User as UserIcon,
   ShieldCheck,
   PhoneCall,
-  Clock
+  Clock,
 } from "lucide-react";
+import { scrymeClient } from "../../lib/scryme";
 
 const authNavLinks = [
   { label: "Home", href: "/" },
@@ -27,16 +28,8 @@ const authNavLinks = [
 ];
 
 function AuthForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams?.get("redirect") || "/booking";
-
-  // SWR mutation to update global session status
-  const { mutate: mutateSession } = useSWR(
-    "http://localhost:3001/api/auth/session",
-    fetcherWithCredentials,
-    { shouldRetryOnError: false }
-  );
 
   // Authentication states
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -51,38 +44,13 @@ function AuthForm() {
     setAuthError("");
     setIsLoading(true);
 
-    const url = authMode === "login"
-      ? "http://localhost:3001/api/auth/signin"
-      : "http://localhost:3001/api/auth/signup";
-
-    const payload = authMode === "login"
-      ? { email: authEmail, password: authPassword }
-      : { name: authName, email: authEmail, password: authPassword, role: "CLIENT" };
-
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        credentials: "include",
+      const response = await scrymeClient.auth.signUp({
+        name: authName,
+        email: authEmail,
+        password: authPassword,
       });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || "Authentication failed");
-      }
-
-      const data = await res.json();
-
-      if (authMode === "login") {
-        // Successful login: update local user session SWR cache
-        await mutateSession({ user: data.user }, { revalidate: false });
-        router.push(redirectPath);
-      } else {
-        setAuthMode("login");
-        setAuthPassword("");
-        alert("Registration successful! Please sign in with your credentials.");
-      }
+      console.log(response);
     } catch (err) {
       const errorObj = err as Error;
       setAuthError(errorObj.message || "An error occurred");
@@ -139,7 +107,9 @@ function AuthForm() {
                   placeholder="e.g. Eleanor Vance"
                   required
                   value={authName}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAuthName(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setAuthName(e.target.value)
+                  }
                   className="bg-white border-brand-border rounded-lg pl-11 py-5 h-11 text-sm shadow-inner"
                 />
               </div>
@@ -158,7 +128,9 @@ function AuthForm() {
               placeholder="e.g. eleanor@aura.com"
               required
               value={authEmail}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAuthEmail(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setAuthEmail(e.target.value)
+              }
               className="bg-white border-brand-border rounded-lg pl-11 py-5 h-11 text-sm shadow-inner"
             />
           </div>
@@ -175,7 +147,9 @@ function AuthForm() {
               placeholder="••••••••"
               required
               value={authPassword}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAuthPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setAuthPassword(e.target.value)
+              }
               className="bg-white border-brand-border rounded-lg pl-11 py-5 h-11 text-sm shadow-inner"
             />
           </div>
@@ -186,7 +160,11 @@ function AuthForm() {
           disabled={isLoading}
           className="w-full text-xs uppercase tracking-[0.2em] bg-brand-primary hover:bg-brand-primary-hover text-white py-5 rounded-lg mt-4 shadow-md font-semibold cursor-pointer transition-colors duration-200"
         >
-          {isLoading ? "Processing..." : authMode === "login" ? "Sign In" : "Register & Continue"}
+          {isLoading
+            ? "Processing..."
+            : authMode === "login"
+              ? "Sign In"
+              : "Register & Continue"}
         </Button>
       </form>
 
@@ -223,17 +201,23 @@ export default function AuthPage() {
               </span>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif text-brand-charcoal leading-tight font-light">
                 Welcome to <br />
-                <span className="italic text-brand-primary font-normal">Our Community</span>
+                <span className="italic text-brand-primary font-normal">
+                  Our Community
+                </span>
               </h1>
               <div className="w-16 h-[1.5px] bg-brand-primary/40 mt-4"></div>
             </div>
 
             <div className="text-xs sm:text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed space-y-4 max-w-md">
               <p>
-                As an Aura guest, creating an account unlocks access to online reservation management, personalized treatment recommendations, and priority access to limited wellness products.
+                As an Aura guest, creating an account unlocks access to online
+                reservation management, personalized treatment recommendations,
+                and priority access to limited wellness products.
               </p>
               <p>
-                Your privacy and security are highly valued. All guest profiles are securely held and used strictly to coordinate bespoke wellness rituals.
+                Your privacy and security are highly valued. All guest profiles
+                are securely held and used strictly to coordinate bespoke
+                wellness rituals.
               </p>
             </div>
 
@@ -255,7 +239,13 @@ export default function AuthPage() {
 
           {/* Right panel with animated card */}
           <div className="lg:col-span-6">
-            <Suspense fallback={<div className="text-center py-20 text-brand-charcoal/50">Loading auth portal...</div>}>
+            <Suspense
+              fallback={
+                <div className="text-center py-20 text-brand-charcoal/50">
+                  Loading auth portal...
+                </div>
+              }
+            >
               <AuthForm />
             </Suspense>
           </div>
