@@ -133,7 +133,7 @@ describe("Spa Platform End-to-End Core Logic Tests", () => {
         name: "Jane Doe",
         email: "jane@example.com",
         password: "securepassword",
-        role: Role.STAFF,
+        role: Role.CLIENT,
       });
 
       const result = await authService.signIn({
@@ -144,7 +144,7 @@ describe("Spa Platform End-to-End Core Logic Tests", () => {
       expect(result).toBeDefined();
       expect(result.token).toBeDefined();
       expect(result.user.name).toBe("Jane Doe");
-      expect(result.user.role).toBe(Role.STAFF);
+      expect(result.user.role).toBe(Role.CLIENT);
 
       // Verify session exists in database
       const dbSession = await prisma.session.findUnique({
@@ -310,11 +310,13 @@ describe("Spa Platform End-to-End Core Logic Tests", () => {
         role: Role.CLIENT,
       });
 
-      staffUser = await authService.signUp({
-        name: "Therapist John",
-        email: "john-therapist@example.com",
-        password: "password123",
-        role: Role.STAFF,
+      // Create staff directly in the database
+      staffUser = await prisma.user.create({
+        data: {
+          name: "Therapist John",
+          email: "john-therapist@example.com",
+          role: Role.STAFF,
+        },
       });
 
       service = await servicesService.create({

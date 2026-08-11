@@ -11,39 +11,100 @@ import { ScrymeService } from "../scryme/scryme.service";
 export class ProductsService {
   private readonly logger = new Logger(ProductsService.name);
 
+  // Cache to store the products and the timestamp when the cache expires
+  private cachedProducts: any[] | null = null;
+  private cacheExpiresAt: number | null = null;
+
   constructor(
     private prisma: PrismaService,
     private scrymeService: ScrymeService,
   ) {}
 
+  /**
+   * Helper to sync/upsert Scryme products into local DB
+   * so that local Prisma schema constraints are preserved.
+   */
+  private async syncProductsWithDb(products: any[]) {
+    try {
+      for (const item of products) {
+        const price = typeof item.price === "number" ? item.price : 0;
+        const stock = typeof item.stock === "number" ? item.stock : 0;
+        await this.prisma.product.upsert({
+          where: { id: item.id },
+          update: {
+            name: item.name || "Unnamed Product",
+            description: item.description || null,
+            price: price,
+            stock: stock,
+          },
+          create: {
+            id: item.id,
+            name: item.name || "Unnamed Product",
+            description: item.description || null,
+            price: price,
+            stock: stock,
+          },
+        });
+      }
+    } catch (err: any) {
+      this.logger.error(
+        `Failed to sync products to local database: ${err.message}`,
+      );
+    }
+  }
+
   async getAll() {
+    // If cache is valid, return cached products
+    if (
+      this.cachedProducts &&
+      this.cacheExpiresAt &&
+      this.cacheExpiresAt > Date.now()
+    ) {
+      return this.cachedProducts;
+    }
+
     try {
       console.log("Fetching products from Scryme...");
       const scrymeProducts = await this.scrymeService.listCatalogProducts();
 
+      // Update cache
+      this.cachedProducts = scrymeProducts;
+      this.cacheExpiresAt = Date.now() + 60 * 60 * 1000; // 1 hour in ms
+
+      // Synchronize in the background to ensure local consistency
+      await this.syncProductsWithDb(scrymeProducts);
+
       return scrymeProducts;
-    } catch (error) {
+    } catch (error: any) {
       console.log(
         `Failed to fetch products from Scryme: ${error.message}. Falling back to stale cache.`,
       );
       this.logger.error(
         `Failed to fetch products from Scryme: ${error.message}. Falling back to stale cache.`,
       );
+      // Fallback to stale cache if available
+      if (this.cachedProducts) {
+        return this.cachedProducts;
+      }
       throw error;
     }
   }
 
   async getOne(id: string) {
+    // Attempt to get from cache first
+    if (this.cachedProducts) {
+      const found = this.cachedProducts.find((p) => p.id === id);
+      if (found) {
+        return found;
+      }
+    }
+
     try {
       const freshProducts = await this.getAll();
       const foundFresh = freshProducts.find((p) => p.id === id);
       if (foundFresh) {
         return foundFresh;
       }
-      // const product = await this.scrymeService.getProduct(id);
-      // if (product) {
-      //   return product;
-      // }
     } catch {
       // Ignored, handle exception if not found below
     }

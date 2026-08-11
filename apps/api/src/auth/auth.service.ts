@@ -18,7 +18,8 @@ export class AuthService {
 
   /**
    * Standard signup endpoint. Creates a User and associated Password Account in database.
-   * Delegates the actual customer/member registration heavy-lifting to Scryme API.
+   * Delegates the actual customer registration heavy-lifting to Scryme API.
+   * Staff/Admin registration is completely disallowed.
    */
   async signUp(dto: {
     name: string;
@@ -33,33 +34,22 @@ export class AuthService {
       throw new ConflictException("A user with this email already exists");
     }
 
+    if (dto.role && dto.role !== "CLIENT") {
+      throw new BadRequestException("Only customer signup is allowed");
+    }
+
     const hashedPassword = dto.password
       ? await bcrypt.hash(dto.password, 10)
       : null;
-    const resolvedRole = dto.role || "CLIENT";
+    const resolvedRole = "CLIENT";
 
-    // 1. Heavy lifting on Scryme side
+    // 1. Heavy lifting on Scryme side (only customer/client)
     try {
-      if (resolvedRole === "STAFF") {
-        await this.scrymeService.createMember({
-          name: dto.name,
-          email: dto.email.toLowerCase(),
-          role: "EMPLOYEE",
-        });
-      } else if (resolvedRole === "ADMIN") {
-        await this.scrymeService.createMember({
-          name: dto.name,
-          email: dto.email.toLowerCase(),
-          role: "ADMIN",
-        });
-      } else {
-        // CLIENT
-        await this.scrymeService.registerCustomer({
-          name: dto.name,
-          email: dto.email.toLowerCase(),
-        });
-      }
-    } catch (error) {
+      await this.scrymeService.registerCustomer({
+        name: dto.name,
+        email: dto.email.toLowerCase(),
+      });
+    } catch (error: any) {
       // Log and propagate/handle Scryme errors to fulfill requirements
       throw new BadRequestException(
         `Failed to register user in Scryme: ${error.message}`,
@@ -89,6 +79,7 @@ export class AuthService {
 
   /**
    * Standard signin endpoint. Validates credentials, creates a session in db, and returns token + session.
+   * Only allows customers/clients to authenticate.
    */
   async signIn(dto: { email: string; password?: string }) {
     const user = await this.prisma.user.findUnique({
@@ -98,6 +89,12 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException("Invalid email or password");
+    }
+
+    if (user.role !== "CLIENT") {
+      throw new UnauthorizedException(
+        "Access denied: only customer authentication is allowed",
+      );
     }
 
     if (dto.password) {
@@ -147,6 +144,7 @@ export class AuthService {
 
   /**
    * Validate a session token. Reads session from database, checks expiry, and returns user if valid.
+   * Only returns the user if they are a customer (CLIENT).
    */
   async validateSession(token: string) {
     const session = await this.prisma.session.findUnique({
@@ -155,6 +153,10 @@ export class AuthService {
     });
 
     if (!session) {
+      return null;
+    }
+
+    if (session.user.role !== "CLIENT") {
       return null;
     }
 
