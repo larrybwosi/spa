@@ -10,6 +10,7 @@ import { PrismaService } from "../prisma.service";
 import { ScrymeService } from "../scryme/scryme.service";
 import { ProductsService } from "../products/products.service";
 import { User, Role } from "@prisma/client";
+import { CreateOrderDtoChannel } from "@scryme/sdk";
 
 @Injectable()
 export class OrdersService implements OnModuleInit, OnModuleDestroy {
@@ -237,7 +238,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       customerId: targetClientId,
       locationId: process.env.SCRYME_LOCATION_ID || "default-location",
       items: scrymeItems,
-      channel: "ECOMMERCE_STORE",
+      channel: "ECOMMERCE_STORE" as CreateOrderDtoChannel,
     };
 
     // Try delegation to Scryme first

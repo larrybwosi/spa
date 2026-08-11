@@ -10,6 +10,7 @@ import {
 } from "@nestjs/common";
 import { ScrymeService } from "./scryme.service";
 import { BetterAuthGuard } from "../auth/better-auth.guard";
+import { CreateMemberDto } from "@scryme/sdk";
 
 @Controller("scryme")
 @UseGuards(BetterAuthGuard)
@@ -62,7 +63,10 @@ export class ScrymeController {
   async createMember(
     @Body() body: { name: string; email: string; role: string },
   ) {
-    return this.scrymeService.createMember(body);
+    return this.scrymeService.createMember({
+      ...body,
+      role: body.role as CreateMemberDto["role"],
+    });
   }
 
   @Get("members/:id")
