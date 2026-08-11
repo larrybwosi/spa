@@ -191,7 +191,7 @@ export function Footer({ exploreLinks = DEFAULT_EXPLORE_LINKS }: FooterProps) {
 
         {/* Bottom */}
         <div className="pt-8 border-t border-[#F1ECE1]/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#DCD3C2]/40 font-body tracking-wide">
-          <span>© 2024 Aura Wellness Sanctuary. All rights reserved.</span>
+          <span>© 2026 Wellness Sanctuary. All rights reserved.</span>
           <span className="italic font-display text-[#DCD3C2]/55">
             Designed with intent
           </span>
