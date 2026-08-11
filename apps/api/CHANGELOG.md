@@ -1,5 +1,11 @@
 # api
 
+## 0.3.0
+
+### Minor Changes
+
+- fea9a34: Test
+
 ## 0.1.0
 
 ### Minor Changes
