@@ -1,14 +1,11 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { Card } from "@repo/ui/card";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
-import useSWR from "swr";
-import { fetcherWithCredentials } from "../swr-fetcher";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Lock,
@@ -28,9 +25,6 @@ const authNavLinks = [
 ];
 
 function AuthForm() {
-  const searchParams = useSearchParams();
-  const redirectPath = searchParams?.get("redirect") || "/booking";
-
   // Authentication states
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [authName, setAuthName] = useState("");

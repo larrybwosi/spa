@@ -11,6 +11,7 @@ import { Footer } from "../../components/Footer";
 import useSWR from "swr";
 import { fetcherWithCredentials, defaultFetcher } from "../swr-fetcher";
 import { motion, AnimatePresence } from "framer-motion";
+import { API_ENDPOINTS } from "../../lib/api";
 import {
   Sparkles,
   Calendar,
@@ -93,7 +94,7 @@ function BookingForm({
     }
 
     try {
-      const res = await fetch("http://localhost:3001/api/bookings", {
+      const res = await fetch(API_ENDPOINTS.bookings(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -273,7 +274,7 @@ export default function BookingPage() {
 
   // User session with SWR
   const { data: sessionData } = useSWR(
-    "http://localhost:3001/api/auth/session",
+    API_ENDPOINTS.authSession(),
     fetcherWithCredentials,
     { shouldRetryOnError: false }
   );
@@ -281,7 +282,7 @@ export default function BookingPage() {
 
   // Services with SWR
   const { data: apiServices } = useSWR(
-    "http://localhost:3001/api/services",
+    API_ENDPOINTS.services(),
     defaultFetcher
   );
   const services = apiServices || [];

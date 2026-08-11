@@ -10,6 +10,7 @@ import { Footer } from "../../../components/Footer";
 import useSWR from "swr";
 import { defaultFetcher } from "../../swr-fetcher";
 import { getServiceById, ServiceDetail } from "../services-data";
+import { API_ENDPOINTS } from "../../../lib/api";
 import {
   ChevronRight,
   Clock,
@@ -38,7 +39,7 @@ export default function ServiceDetailPage() {
     error: serviceError,
     isLoading: serviceLoading,
   } = useSWR(
-    id ? `http://localhost:3001/api/services/${id}` : null,
+    id ? API_ENDPOINTS.serviceDetail(id) : null,
     defaultFetcher,
   );
 
