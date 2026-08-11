@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { Card } from "@repo/ui/card";
@@ -9,16 +10,16 @@ import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
 import useSWR from "swr";
 import { fetcherWithCredentials, defaultFetcher } from "../swr-fetcher";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
   Calendar,
-  Lock,
-  Mail,
   User as UserIcon,
   CheckCircle,
   ShieldCheck,
   PhoneCall,
-  Clock
+  Clock,
+  Lock
 } from "lucide-react";
 
 interface Service {
@@ -43,13 +44,11 @@ const bookingNavLinks = [
 
 function BookingForm({
   user,
-  setUser,
   services,
   setBookingName,
   bookingName
 }: {
   user: User | null;
-  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   services: Service[];
   setBookingName: React.Dispatch<React.SetStateAction<string>>;
   bookingName: string;
@@ -61,13 +60,6 @@ function BookingForm({
   const [bookingService, setBookingService] = useState("Therapeutic Massage");
   const [bookingDate, setBookingDate] = useState("");
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
-
-  // Authentication states
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
-  const [authName, setAuthName] = useState("");
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
-  const [authError, setAuthError] = useState("");
 
   // Initialize service based on query param
   useEffect(() => {
@@ -85,49 +77,7 @@ function BookingForm({
     }
   }, [preselectedServiceId, services]);
 
-  const handleAuthSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError("");
-    const url = authMode === "login"
-      ? "http://localhost:3001/api/auth/signin"
-      : "http://localhost:3001/api/auth/signup";
-
-    const payload = authMode === "login"
-      ? { email: authEmail, password: authPassword }
-      : { name: authName, email: authEmail, password: authPassword, role: "CLIENT" };
-
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || "Authentication failed");
-      }
-
-      const data = await res.json();
-
-      if (authMode === "login") {
-        setUser(data.user);
-        setBookingName(data.user.name);
-        setAuthEmail("");
-        setAuthPassword("");
-      } else {
-        setAuthMode("login");
-        setAuthPassword("");
-        alert("Registration successful! Please sign in with your credentials.");
-      }
-    } catch (err) {
-      const errorObj = err as Error;
-      setAuthError(errorObj.message || "An error occurred");
-    }
-  };
-
-  const handleBookingSubmit = async (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) {
       alert("Please sign in or register to complete your booking.");
@@ -171,198 +121,149 @@ function BookingForm({
   };
 
   return (
-    <Card className="bg-brand-card-cream/60 border border-brand-border/60 p-6 sm:p-10 rounded-xl shadow-sm max-w-xl mx-auto">
-      {bookingSubmitted ? (
-        <div className="text-center py-10 space-y-4">
-          <div className="w-16 h-14 bg-brand-sage text-brand-sage-dark rounded-full flex items-center justify-center mx-auto shadow-sm">
-            <CheckCircle className="h-8 w-8" />
-          </div>
-          <h2 className="font-serif text-2xl sm:text-3xl text-brand-charcoal">Ritual Scheduled Successfully!</h2>
-          <p className="text-xs sm:text-sm text-brand-charcoal/70 font-sans leading-relaxed">
-            Thank you, <span className="font-bold text-brand-charcoal">{bookingName}</span>. Your session has been successfully booked. Our hosts will confirm your therapist and send full ritual directions shortly.
-          </p>
-        </div>
-      ) : user ? (
-        <form onSubmit={handleBookingSubmit} className="space-y-6">
-          <div className="text-center pb-2">
-            <span className="text-[10px] tracking-[0.25em] text-brand-primary font-bold uppercase block mb-1">
-              BESPOKE RITUAL
-            </span>
-            <h2 className="font-serif text-2xl sm:text-3xl text-brand-charcoal tracking-wide">
-              Schedule Session
-            </h2>
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="bookingName" className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
-                Guest Name
-              </label>
-              <div className="relative">
-                <UserIcon className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40" />
-                <Input
-                  id="bookingName"
-                  type="text"
-                  required
-                  value={bookingName}
-                  onChange={(e) => setBookingName(e.target.value)}
-                  className="bg-white border-brand-border rounded-lg pl-11 py-5 h-11 text-sm shadow-inner"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="bookingService" className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
-                Select Treatment
-              </label>
-              <div className="relative">
-                <Sparkles className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40 pointer-events-none" />
-                <select
-                  id="bookingService"
-                  value={bookingService}
-                  onChange={(e) => setBookingService(e.target.value)}
-                  className="flex h-11 w-full rounded-lg border border-brand-border bg-white pl-11 pr-4 py-2.5 text-xs sm:text-sm text-brand-charcoal/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary/50 shadow-inner appearance-none cursor-pointer font-sans"
-                >
-                  {services.length > 0 ? (
-                    services.map((svc) => (
-                      <option key={svc.id} value={svc.id}>
-                        {svc.name} (${svc.price})
-                      </option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="Therapeutic Massage">Therapeutic Massage ($120)</option>
-                      <option value="Rejuvenating Facial">Rejuvenating Facial ($145)</option>
-                      <option value="Wellness Consultation">Wellness Consultation ($95)</option>
-                    </>
-                  )}
-                </select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="bookingDate" className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
-                Preferred Date & Time
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40" />
-                <Input
-                  id="bookingDate"
-                  type="datetime-local"
-                  required
-                  value={bookingDate}
-                  onChange={(e) => setBookingDate(e.target.value)}
-                  className="bg-white border-brand-border text-brand-charcoal rounded-lg pl-11 py-5 h-11 text-sm shadow-inner"
-                />
-              </div>
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full text-xs uppercase tracking-[0.2em] bg-brand-primary hover:bg-brand-primary-hover text-white py-5 rounded-lg mt-3 shadow-md font-semibold cursor-pointer"
+    <Card className="bg-brand-card-cream/60 border border-brand-border/60 p-6 sm:p-10 rounded-xl shadow-lg max-w-xl mx-auto overflow-hidden">
+      <AnimatePresence mode="wait">
+        {bookingSubmitted ? (
+          <motion.div
+            key="success-card"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="text-center py-10 space-y-4"
           >
-            Confirm Reservation
-          </Button>
-        </form>
-      ) : (
-        <form onSubmit={handleAuthSubmit} className="space-y-6">
-          <div className="text-center pb-2">
-            <span className="text-[10px] tracking-[0.25em] text-brand-primary font-bold uppercase block mb-1">
-              GUEST ACCESS
-            </span>
-            <h2 className="font-serif text-2xl sm:text-3xl text-brand-charcoal tracking-wide">
-              {authMode === "login" ? "Sign In" : "Register Guest"}
-            </h2>
-            <p className="text-xs text-brand-charcoal/60 font-sans mt-2">
-              Please authenticate to reserve your bespoke wellness ritual.
-            </p>
-          </div>
-
-          {authError && (
-            <div className="text-red-600 bg-red-50 border border-red-200 text-xs sm:text-sm rounded-lg p-3 text-center font-medium animate-fade-in">
-              {authError}
+            <div className="w-16 h-14 bg-brand-sage text-brand-sage-dark rounded-full flex items-center justify-center mx-auto shadow-sm">
+              <CheckCircle className="h-8 w-8" />
             </div>
-          )}
+            <h2 className="font-serif text-2xl sm:text-3xl text-brand-charcoal">Ritual Scheduled Successfully!</h2>
+            <p className="text-xs sm:text-sm text-brand-charcoal/70 font-sans leading-relaxed">
+              Thank you, <span className="font-bold text-brand-charcoal">{bookingName}</span>. Your session has been successfully booked. Our hosts will confirm your therapist and send full ritual directions shortly.
+            </p>
+          </motion.div>
+        ) : user ? (
+          <motion.form
+            key="booking-form"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            onSubmit={handleBookingSubmit}
+            className="space-y-6"
+          >
+            <div className="text-center pb-2">
+              <span className="text-[10px] tracking-[0.25em] text-brand-primary font-bold uppercase block mb-1">
+                BESPOKE RITUAL
+              </span>
+              <h2 className="font-serif text-2xl sm:text-3xl text-brand-charcoal tracking-wide">
+                Schedule Session
+              </h2>
+            </div>
 
-          <div className="space-y-4">
-            {authMode === "register" && (
+            <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
-                  Full Name
+                <label htmlFor="bookingName" className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
+                  Guest Name
                 </label>
                 <div className="relative">
                   <UserIcon className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40" />
                   <Input
+                    id="bookingName"
                     type="text"
-                    placeholder="e.g. Eleanor Vance"
                     required
-                    value={authName}
-                    onChange={(e) => setAuthName(e.target.value)}
+                    value={bookingName}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBookingName(e.target.value)}
                     className="bg-white border-brand-border rounded-lg pl-11 py-5 h-11 text-sm shadow-inner"
                   />
                 </div>
               </div>
-            )}
 
-            <div className="space-y-2">
-              <label className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40" />
-                <Input
-                  type="email"
-                  placeholder="e.g. eleanor@aura.com"
-                  required
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                  className="bg-white border-brand-border rounded-lg pl-11 py-5 h-11 text-sm shadow-inner"
-                />
+              <div className="space-y-2">
+                <label htmlFor="bookingService" className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
+                  Select Treatment
+                </label>
+                <div className="relative">
+                  <Sparkles className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40 pointer-events-none" />
+                  <select
+                    id="bookingService"
+                    value={bookingService}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setBookingService(e.target.value)}
+                    className="flex h-11 w-full rounded-lg border border-brand-border bg-white pl-11 pr-4 py-2.5 text-xs sm:text-sm text-brand-charcoal/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary/50 shadow-inner appearance-none cursor-pointer font-sans"
+                  >
+                    {services.length > 0 ? (
+                      services.map((svc) => (
+                        <option key={svc.id} value={svc.id}>
+                          {svc.name} (${svc.price})
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="Therapeutic Massage">Therapeutic Massage ($120)</option>
+                        <option value="Rejuvenating Facial">Rejuvenating Facial ($145)</option>
+                        <option value="Wellness Consultation">Wellness Consultation ($95)</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="bookingDate" className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
+                  Preferred Date & Time
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40" />
+                  <Input
+                    id="bookingDate"
+                    type="datetime-local"
+                    required
+                    value={bookingDate}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBookingDate(e.target.value)}
+                    className="bg-white border-brand-border text-brand-charcoal rounded-lg pl-11 py-5 h-11 text-sm shadow-inner"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/60 font-sans block pl-1">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-3.5 h-4 w-4 text-brand-charcoal/40" />
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                  value={authPassword}
-                  onChange={(e) => setAuthPassword(e.target.value)}
-                  className="bg-white border-brand-border rounded-lg pl-11 py-5 h-11 text-sm shadow-inner"
-                />
-              </div>
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full text-xs uppercase tracking-[0.2em] bg-brand-primary hover:bg-brand-primary-hover text-white py-5 rounded-lg mt-3 shadow-md font-semibold cursor-pointer"
-          >
-            {authMode === "login" ? "Sign In" : "Register & Continue"}
-          </Button>
-
-          <div className="text-center pt-2">
-            <button
-              type="button"
-              onClick={() => {
-                setAuthMode(authMode === "login" ? "register" : "login");
-                setAuthError("");
-              }}
-              className="text-xs text-brand-primary hover:underline font-sans font-bold cursor-pointer bg-transparent border-0"
+            <Button
+              type="submit"
+              className="w-full text-xs uppercase tracking-[0.2em] bg-brand-primary hover:bg-brand-primary-hover text-white py-5 rounded-lg mt-3 shadow-md font-semibold cursor-pointer"
             >
-              {authMode === "login"
-                ? "Don't have an account? Sign Up"
-                : "Already have an account? Sign In"}
-            </button>
-          </div>
-        </form>
-      )}
+              Confirm Reservation
+            </Button>
+          </motion.form>
+        ) : (
+          <motion.div
+            key="unauthenticated-prompt"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className="text-center py-10 space-y-6"
+          >
+            <div className="w-16 h-16 bg-brand-primary/10 text-brand-primary rounded-full flex items-center justify-center mx-auto shadow-sm">
+              <Lock className="h-7 w-7" />
+            </div>
+            <div className="space-y-2">
+              <span className="text-[10px] tracking-[0.25em] text-brand-primary font-bold uppercase block">
+                AUTHENTICATION REQUIRED
+              </span>
+              <h2 className="font-serif text-2xl sm:text-3xl text-brand-charcoal tracking-wide">
+                Identify Yourself
+              </h2>
+              <p className="text-xs sm:text-sm text-brand-charcoal/60 font-sans max-w-sm mx-auto leading-relaxed">
+                To customize your bespoke wellness ritual, please register as a guest or sign in to your Aura profile.
+              </p>
+            </div>
+            <div className="pt-4">
+              <Button
+                asChild
+                className="w-full text-xs uppercase tracking-[0.2em] bg-brand-primary hover:bg-brand-primary-hover text-white py-5 rounded-lg shadow-md font-semibold cursor-pointer"
+              >
+                <Link href="/auth?redirect=/booking">
+                  Go to Sign In / Sign Up
+                </Link>
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Card>
   );
 }
@@ -371,7 +272,7 @@ export default function BookingPage() {
   const [bookingName, setBookingName] = useState("");
 
   // User session with SWR
-  const { data: sessionData, mutate: mutateSession } = useSWR(
+  const { data: sessionData } = useSWR(
     "http://localhost:3001/api/auth/session",
     fetcherWithCredentials,
     { shouldRetryOnError: false }
@@ -390,13 +291,6 @@ export default function BookingPage() {
       setBookingName(user.name);
     }
   }, [user]);
-
-  const setUser: React.Dispatch<React.SetStateAction<User | null>> = (
-    userVal: React.SetStateAction<User | null>
-  ) => {
-    const nextUser = typeof userVal === "function" ? (userVal as (prev: User | null) => User | null)(user) : userVal;
-    mutateSession(nextUser ? { user: nextUser } : null, { revalidate: false });
-  };
 
   return (
     <div className="relative min-h-screen bg-brand-cream text-brand-charcoal overflow-x-hidden font-sans selection:bg-brand-primary/20">
@@ -421,7 +315,7 @@ export default function BookingPage() {
               <div className="w-16 h-[1.5px] bg-brand-primary/40 mt-4"></div>
             </div>
 
-            <div className="text-xs sm:text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed space-y-4">
+            <div className="text-xs sm:text-sm text-brand-charcoal/70 font-sans font-light leading-relaxed space-y-4 font-body">
               <p>
                 To provide the ultimate standard of bespoke care, each treatment session at Aura Wellness is intentionally planned around your physical state and lifestyle needs.
               </p>
@@ -451,7 +345,6 @@ export default function BookingPage() {
             <Suspense fallback={<div className="text-center py-20 text-brand-charcoal/50">Loading booking portal...</div>}>
               <BookingForm
                 user={user}
-                setUser={setUser}
                 services={services}
                 setBookingName={setBookingName}
                 bookingName={bookingName}

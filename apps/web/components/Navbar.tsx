@@ -6,6 +6,7 @@ import useSWR from "swr";
 import { Button } from "@repo/ui/button";
 import { Menu, X, ChevronRight } from "lucide-react";
 import { fetcherWithCredentials } from "../app/swr-fetcher";
+import { motion, AnimatePresence } from "framer-motion";
 
 export interface NavLink {
   label: string;
@@ -96,7 +97,7 @@ export function Navbar({ navLinks = [], activeHref }: NavbarProps) {
           <div className="hidden md:flex items-center gap-6">
             {user ? (
               <div className="flex items-center gap-4 border-r pr-6 border-[#1C1B18]/15">
-                <span className="text-[10px] font-label uppercase tracking-widest text-[#1C1B18]/70 font-semibold">
+                <span className="text-[10px] font-label uppercase tracking-widest text-[#1C1B18]/70 font-semibold font-body">
                   Hello, {user.name}
                 </span>
                 <button
@@ -108,8 +109,8 @@ export function Navbar({ navLinks = [], activeHref }: NavbarProps) {
               </div>
             ) : (
               <Link
-                href="/booking"
-                className="text-[11px] font-label uppercase tracking-widest font-semibold hover:text-[#A9784F] transition-colors text-[#1C1B18]/80 cursor-pointer"
+                href="/auth?redirect=/booking"
+                className="text-[11px] font-label uppercase tracking-widest font-semibold hover:text-[#A9784F] transition-colors text-[#1C1B18]/80 cursor-pointer font-body"
               >
                 Sign In
               </Link>
@@ -140,62 +141,77 @@ export function Navbar({ navLinks = [], activeHref }: NavbarProps) {
       </header>
 
       {/* MOBILE DRAWER */}
-      <div
-        className={`fixed inset-0 z-30 bg-[#1C1B18] transition-all duration-500 ease-in-out transform lg:hidden ${
-          isMobileMenuOpen
-            ? "translate-x-0 opacity-100"
-            : "translate-x-full opacity-0 pointer-events-none"
-        } pt-24 px-6 sm:px-12`}
-      >
-        <nav className="flex flex-col space-y-1 font-display text-2xl text-[#F1ECE1]">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="hover:text-[#A9784F] transition-colors py-4 border-b border-[#F1ECE1]/10 flex justify-between items-center group"
-            >
-              <span>{link.label}</span>
-              <ChevronRight className="h-4 w-4 text-[#A9784F] opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
-            </Link>
-          ))}
-
-          {user ? (
-            <div className="py-5 border-b border-[#F1ECE1]/10 flex items-center justify-between font-body text-sm">
-              <span className="text-[#F1ECE1]/70">Hello, {user.name}</span>
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, x: "100%" }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: "100%" }}
+            transition={{ type: "spring", bounce: 0.1, duration: 0.5 }}
+            className="fixed inset-0 z-30 bg-[#1C1B18] lg:hidden pt-24 px-6 sm:px-12 overflow-y-auto"
+          >
+            {/* Close button inside mobile menu */}
+            <div className="absolute top-6 right-6">
               <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  handleLogout();
-                }}
-                className="text-[10px] font-label uppercase tracking-widest text-[#A9784F] font-bold bg-transparent border-0 p-0 cursor-pointer"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 text-[#F1ECE1] hover:text-[#A9784F] bg-transparent border-0"
+                aria-label="Close menu"
               >
-                Logout
+                <X className="h-6 w-6" />
               </button>
             </div>
-          ) : (
-            <Link
-              href="/booking"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="hover:text-[#A9784F] transition-colors py-4 border-b border-[#F1ECE1]/10 flex justify-between items-center"
-            >
-              <span>Sign In</span>
-              <ChevronRight className="h-4 w-4 text-[#A9784F]" />
-            </Link>
-          )}
 
-          <div className="pt-8">
-            <Button
-              asChild
-              className="w-full text-xs font-label uppercase tracking-[0.2em] bg-[#A9784F] text-[#1C1B18] py-6 rounded-none font-semibold hover:bg-[#93673F]"
-            >
-              <Link href="/booking" onClick={() => setIsMobileMenuOpen(false)}>
-                Book Now
-              </Link>
-            </Button>
-          </div>
-        </nav>
-      </div>
+            <nav className="flex flex-col space-y-1 font-display text-2xl text-[#F1ECE1]">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="hover:text-[#A9784F] transition-colors py-4 border-b border-[#F1ECE1]/10 flex justify-between items-center group"
+                >
+                  <span>{link.label}</span>
+                  <ChevronRight className="h-4 w-4 text-[#A9784F] opacity-0 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
+                </Link>
+              ))}
+
+              {user ? (
+                <div className="py-5 border-b border-[#F1ECE1]/10 flex items-center justify-between font-body text-sm">
+                  <span className="text-[#F1ECE1]/70 font-body">Hello, {user.name}</span>
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="text-[10px] font-label uppercase tracking-widest text-[#A9784F] font-bold bg-transparent border-0 p-0 cursor-pointer"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/auth?redirect=/booking"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="hover:text-[#A9784F] transition-colors py-4 border-b border-[#F1ECE1]/10 flex justify-between items-center"
+                >
+                  <span className="font-body">Sign In</span>
+                  <ChevronRight className="h-4 w-4 text-[#A9784F]" />
+                </Link>
+              )}
+
+              <div className="pt-8">
+                <Button
+                  asChild
+                  className="w-full text-xs font-label uppercase tracking-[0.2em] bg-[#A9784F] text-[#1C1B18] py-6 rounded-none font-semibold hover:bg-[#93673F]"
+                >
+                  <Link href="/booking" onClick={() => setIsMobileMenuOpen(false)}>
+                    Book Now
+                  </Link>
+                </Button>
+              </div>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
