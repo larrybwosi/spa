@@ -86,23 +86,27 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
 
   async getAll(user: User) {
     try {
-      const scrymeBookings = await this.scrymeService.listBookings();
+      const scrymeBookings = (await this.scrymeService.listBookings()) as any[];
       const mappedBookings = await Promise.all(
-        scrymeBookings.map((b) => this.mapScrymeBooking(b)),
+        scrymeBookings.map((b: any) => this.mapScrymeBooking(b)),
       );
 
       if (user.role === Role.ADMIN) {
         return mappedBookings.sort(
-          (a, b) => b.dateTime.getTime() - a.dateTime.getTime(),
+          (a: any, b: any) => b.dateTime.getTime() - a.dateTime.getTime(),
         );
       } else if (user.role === Role.STAFF) {
         return mappedBookings
-          .filter((b) => b.staffId === user.id)
-          .sort((a, b) => b.dateTime.getTime() - a.dateTime.getTime());
+          .filter((b: any) => b.staffId === user.id)
+          .sort(
+            (a: any, b: any) => b.dateTime.getTime() - a.dateTime.getTime(),
+          );
       } else {
         return mappedBookings
-          .filter((b) => b.clientId === user.id)
-          .sort((a, b) => b.dateTime.getTime() - a.dateTime.getTime());
+          .filter((b: any) => b.clientId === user.id)
+          .sort(
+            (a: any, b: any) => b.dateTime.getTime() - a.dateTime.getTime(),
+          );
       }
     } catch {
       if (user.role === Role.ADMIN) {
@@ -220,7 +224,9 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
 
     // 6. Delegate heavy-lifting booking creation to Scryme
     try {
-      const scrymeBooking = await this.scrymeService.createBooking(payload);
+      const scrymeBooking = (await this.scrymeService.createBooking(
+        payload,
+      )) as any;
       return {
         id: scrymeBooking.id || "scryme-booking-id",
         clientId: targetClientId,
@@ -282,7 +288,7 @@ export class BookingsService implements OnModuleInit, OnModuleDestroy {
       else if (status === BookingStatus.COMPLETED) scrymeStatus = "COMPLETED";
 
       await this.scrymeService.updateBookingStatus(id, {
-        status: scrymeStatus,
+        status: scrymeStatus as any,
       });
     } catch {
       // Graceful fallback / logging since Scryme might not have this specific booking ID stored locally

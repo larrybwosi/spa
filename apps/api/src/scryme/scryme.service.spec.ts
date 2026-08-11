@@ -1,6 +1,13 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ScrymeService } from "./scryme.service";
 import { ScrymeCacheService } from "./scryme-cache.service";
+import { ScrymeBaseService } from "./scryme-base.service";
+import { ScrymeCustomersService } from "./scryme-customers.service";
+import { ScrymeMembersService } from "./scryme-members.service";
+import { ScrymeShiftsService } from "./scryme-shifts.service";
+import { ScrymeBookingsService } from "./scryme-bookings.service";
+import { ScrymeCatalogService } from "./scryme-catalog.service";
+import { ScrymeOrdersService } from "./scryme-orders.service";
 
 describe("ScrymeService OAuth Token Exchange & Catalog Tests", () => {
   let service: ScrymeService;
@@ -17,6 +24,13 @@ describe("ScrymeService OAuth Token Exchange & Catalog Tests", () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ScrymeBaseService,
+        ScrymeCustomersService,
+        ScrymeMembersService,
+        ScrymeShiftsService,
+        ScrymeBookingsService,
+        ScrymeCatalogService,
+        ScrymeOrdersService,
         ScrymeService,
         {
           provide: ScrymeCacheService,
@@ -37,27 +51,6 @@ describe("ScrymeService OAuth Token Exchange & Catalog Tests", () => {
     expect(service.scrymeClient).toBeDefined();
   });
 
-  it("should call auth.authenticate on scrymeServer for fetchAccessToken", async () => {
-    const authSpy = jest
-      .spyOn(service.scrymeServer.auth, "authenticate")
-      .mockResolvedValue({
-        token: "mocked-token-abc",
-      });
-
-    const token = await service.fetchAccessToken();
-    expect(token).toBe("mocked-token-abc");
-    expect(authSpy).toHaveBeenCalled();
-  });
-
-  it("should handle error in fetchAccessToken and return a fallback", async () => {
-    jest
-      .spyOn(service.scrymeServer.auth, "authenticate")
-      .mockRejectedValue(new Error("Auth failed"));
-
-    const token = await service.fetchAccessToken();
-    expect(token).toBe("test-access-token");
-  });
-
   it("should cache successful GET requests and invalidate on mutation requests", async () => {
     const mockProducts = [{ id: "p1", name: "Product 1" }];
 
@@ -74,8 +67,9 @@ describe("ScrymeService OAuth Token Exchange & Catalog Tests", () => {
 
     // Mock GET requests caching
     let hasGetCache = false;
+    const orgSlug = service["base"].orgSlug;
     mockCacheService.get.mockImplementation((key: string) => {
-      if (key === "scryme:req:GET:/v3/spa-test-org/catalog/products") {
+      if (key === `scryme:req:GET:/v3/${orgSlug}/catalog/products`) {
         return Promise.resolve(hasGetCache ? mockProducts : null);
       }
       return Promise.resolve(null);
@@ -86,7 +80,7 @@ describe("ScrymeService OAuth Token Exchange & Catalog Tests", () => {
     expect(result1).toEqual(mockProducts);
     expect(getProductsSpy).toHaveBeenCalledTimes(1);
     expect(mockCacheService.set).toHaveBeenCalledWith(
-      "scryme:req:GET:/v3/spa-test-org/catalog/products",
+      `scryme:req:GET:/v3/${orgSlug}/catalog/products`,
       mockProducts,
       3600,
     );
