@@ -19,6 +19,7 @@ jobs:
     outputs:
       published: ${{ steps.changesets.outputs.published }}
       publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
+      version: ${{ steps.extract_version.outputs.version }}
 
     steps:
       - name: Checkout Code
@@ -31,7 +32,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -42,9 +43,28 @@ jobs:
         with:
           version: pnpm version-packages
           publish: pnpm release
-          createGithubReleases: true
+          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Release Version
+        id: extract_version
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          PUBLISHED_PACKAGES='${{ steps.changesets.outputs.publishedPackages }}'
+          VERSION=$(echo "$PUBLISHED_PACKAGES" | jq -r '.[0].version' 2>/dev/null || true)
+          if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
+            VERSION=$(jq -r .version apps/api/package.json)
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Single GitHub Release
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.extract_version.outputs.version }}
+        run: |
+          gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes
 
   build-and-push:
     name: Build and Push Docker Images
@@ -58,29 +78,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
-      - name: Extract Release Tags
-        id: extract_version
-        run: |
-          PUBLISHED_PACKAGES='${{ needs.release.outputs.publishedPackages }}'
-          echo "Published packages: $PUBLISHED_PACKAGES"
-
-          API_VERSION=$(echo "$PUBLISHED_PACKAGES" | jq -r '.[] | select(.name == "api") | .version' 2>/dev/null || true)
-          if [ -z "$API_VERSION" ] || [ "$API_VERSION" = "null" ]; then
-            API_VERSION=$(jq -r .version apps/api/package.json)
-          fi
-          API_GIT_TAG="api-$API_VERSION"
-
-          WEB_VERSION=$(echo "$PUBLISHED_PACKAGES" | jq -r '.[] | select(.name == "web") | .version' 2>/dev/null || true)
-          if [ -z "$WEB_VERSION" ] || [ "$WEB_VERSION" = "null" ]; then
-            WEB_VERSION=$(jq -r .version apps/web/package.json)
-          fi
-          WEB_GIT_TAG="web-$WEB_VERSION"
-
-          echo "api_version=$API_VERSION" >> $GITHUB_OUTPUT
-          echo "api_git_tag=$API_GIT_TAG" >> $GITHUB_OUTPUT
-          echo "web_version=$WEB_VERSION" >> $GITHUB_OUTPUT
-          echo "web_git_tag=$WEB_GIT_TAG" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -103,9 +100,8 @@ jobs:
           push: true
           tags: |
             ghcr.io/larrybwosi/spa/api:latest
-            ghcr.io/larrybwosi/spa/api:${{ github.sha }}
-            ghcr.io/larrybwosi/spa/api:${{ steps.extract_version.outputs.api_version }}
-            ghcr.io/larrybwosi/spa/api:${{ steps.extract_version.outputs.api_git_tag }}
+            ghcr.io/larrybwosi/spa/api:${{ needs.release.outputs.version }}
+            ghcr.io/larrybwosi/spa/api:v${{ needs.release.outputs.version }}
 
       - name: Build and Push Web Image
         uses: docker/build-push-action@v6
@@ -115,6 +111,5 @@ jobs:
           push: true
           tags: |
             ghcr.io/larrybwosi/spa/web:latest
-            ghcr.io/larrybwosi/spa/web:${{ github.sha }}
-            ghcr.io/larrybwosi/spa/web:${{ steps.extract_version.outputs.web_version }}
-            ghcr.io/larrybwosi/spa/web:${{ steps.extract_version.outputs.web_git_tag }}
+            ghcr.io/larrybwosi/spa/web:${{ needs.release.outputs.version }}
+            ghcr.io/larrybwosi/spa/web:v${{ needs.release.outputs.version }}

@@ -233,7 +233,7 @@ export default function Home() {
         <div className="absolute inset-0 z-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/hero.png"
+            src="https://cdn.sanity.io/images/ce88cj7n/production/bb6ab9270d7c090fced607191007b12fd711e96d-1456x816.png?f=webpq=80"
             alt="Still thermal pool at dusk"
             className="w-full h-full object-cover object-center opacity-[0.38] mix-blend-luminosity scale-105"
           />

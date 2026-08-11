@@ -21,11 +21,11 @@ export class ScrymeService {
     private readonly ordersService: ScrymeOrdersService,
   ) {}
 
-  public get scrymeServer(): ScrymeServerSDK {
+  public get api(): ScrymeServerSDK {
     return this.base.scrymeServer;
   }
 
-  public get scrymeClient(): ScrymeClientSDK {
+  public get client(): ScrymeClientSDK {
     return this.base.scrymeClient;
   }
 

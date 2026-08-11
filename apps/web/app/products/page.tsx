@@ -57,14 +57,15 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [sortBy, setSortBy] = useState<string>("featured");
 
-  const { data: apiProducts, error, isLoading } = useSWR(
-    API_ENDPOINTS.products(),
-    defaultFetcher,
-  );
+  const {
+    data: apiProducts,
+    error,
+    isLoading,
+  } = useSWR(API_ENDPOINTS.products(), defaultFetcher);
 
   const products = useMemo(() => {
-    if (Array.isArray(apiProducts)) {
-      return apiProducts.map((apiProd: ApiProduct) => {
+    if (Array.isArray(apiProducts.data)) {
+      return apiProducts.data.map((apiProd: ApiProduct) => {
         const fallbackMatch = FALLBACK_PRODUCTS.find(
           (fp) =>
             fp.id === apiProd.id ||
@@ -200,7 +201,8 @@ export default function ProductsPage() {
             Catalog Unavailable
           </h2>
           <p className="text-sm text-[#1C1B18]/65 font-body font-light leading-relaxed">
-            We are currently unable to load the apothecary collection. Please check your network connection or try again later.
+            We are currently unable to load the apothecary collection. Please
+            check your network connection or try again later.
           </p>
           <Button
             onClick={() => window.location.reload()}

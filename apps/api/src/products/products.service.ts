@@ -17,41 +17,8 @@ export class ProductsService {
 
   constructor(
     private prisma: PrismaService,
-    private scrymeService: ScrymeService,
+    private scryme: ScrymeService,
   ) {}
-
-  /**
-   * Helper to sync/upsert Scryme products into local DB
-   * so that local Prisma schema constraints are preserved.
-   */
-  private async syncProductsWithDb(products: any[]) {
-    try {
-      for (const item of products) {
-        const price = typeof item.price === "number" ? item.price : 0;
-        const stock = typeof item.stock === "number" ? item.stock : 0;
-        await this.prisma.product.upsert({
-          where: { id: item.id },
-          update: {
-            name: item.name || "Unnamed Product",
-            description: item.description || null,
-            price: price,
-            stock: stock,
-          },
-          create: {
-            id: item.id,
-            name: item.name || "Unnamed Product",
-            description: item.description || null,
-            price: price,
-            stock: stock,
-          },
-        });
-      }
-    } catch (err: any) {
-      this.logger.error(
-        `Failed to sync products to local database: ${err.message}`,
-      );
-    }
-  }
 
   async getAll() {
     // If cache is valid, return cached products
@@ -65,14 +32,11 @@ export class ProductsService {
 
     try {
       console.log("Fetching products from Scryme...");
-      const scrymeProducts = await this.scrymeService.listCatalogProducts();
+      const scrymeProducts = await this.scryme.listCatalogProducts();
 
       // Update cache
       this.cachedProducts = scrymeProducts;
       this.cacheExpiresAt = Date.now() + 60 * 60 * 1000; // 1 hour in ms
-
-      // Synchronize in the background to ensure local consistency
-      await this.syncProductsWithDb(scrymeProducts);
 
       return scrymeProducts;
     } catch (error: any) {
@@ -100,8 +64,8 @@ export class ProductsService {
     }
 
     try {
-      const freshProducts = await this.getAll();
-      const foundFresh = freshProducts.find((p) => p.id === id);
+      const freshProducts = await this.scryme.api.catalog.getProducts();
+      const foundFresh = freshProducts.data.find((p) => p.id === id);
       if (foundFresh) {
         return foundFresh;
       }
