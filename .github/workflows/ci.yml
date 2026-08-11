@@ -37,5 +37,8 @@ jobs:
       - name: Run Type Checking Checks
         run: DATABASE_URL=postgresql://dummy@localhost:5432/dummy pnpm exec turbo run check-types --affected
 
+      - name: Run Affected App Builds
+        run: DATABASE_URL=postgresql://dummy@localhost:5432/dummy NEXT_PUBLIC_API_URL=http://localhost:3001 BETTER_AUTH_SECRET=mock-secret SCRYME_CLIENT_ID=mock-id SCRYME_CLIENT_SECRET=mock-secret SCRYME_API_KEY=mock-key SCRYME_ORG_SLUG=mock-slug SCRYME_LOCATION_ID=mock-loc SCRYME_API_URL=https://api.scryme.tech pnpm exec turbo run build --affected
+
       - name: Run Tests
         run: DATABASE_URL=postgresql://dummy@localhost:5432/dummy pnpm exec turbo run test --affected
