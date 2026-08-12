@@ -64,8 +64,14 @@ export default function ProductsPage() {
   } = useSWR(API_ENDPOINTS.products(), defaultFetcher);
 
   const products = useMemo(() => {
-    if (Array.isArray(apiProducts.data)) {
-      return apiProducts.data.map((apiProd: ApiProduct) => {
+    const productsArray = Array.isArray(apiProducts)
+      ? apiProducts
+      : apiProducts && Array.isArray(apiProducts.data)
+        ? apiProducts.data
+        : null;
+
+    if (productsArray) {
+      return productsArray.map((apiProd: ApiProduct) => {
         const fallbackMatch = FALLBACK_PRODUCTS.find(
           (fp) =>
             fp.id === apiProd.id ||
