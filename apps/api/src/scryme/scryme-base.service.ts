@@ -11,7 +11,8 @@ export class ScrymeBaseService {
 
   constructor(private readonly cacheService: ScrymeCacheService) {
     const clientId = process.env.SCRYME_CLIENT_ID || "test-client-id";
-    const clientSecret = process.env.SCRYME_CLIENT_SECRET || "test-client-secret";
+    const clientSecret =
+      process.env.SCRYME_CLIENT_SECRET || "test-client-secret";
     const orgSlug = process.env.SCRYME_ORG_SLUG || "spa-test-org";
     const baseURL = process.env.SCRYME_API_URL || "http://localhost:3001";
 

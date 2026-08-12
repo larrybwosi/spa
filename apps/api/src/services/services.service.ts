@@ -66,12 +66,25 @@ export class ServicesService {
   }
 
   async getAll() {
+    // If cache is valid, return cached services
+    if (
+      this.cachedServices &&
+      this.cacheExpiresAt &&
+      this.cacheExpiresAt > Date.now()
+    ) {
+      return this.cachedServices;
+    }
+
     try {
       this.logger.debug("Fetching services from Scryme...");
       const scrymeServices = await this.scrymeService.listCatalogServices();
 
+      // Update cache
+      this.cachedServices = scrymeServices;
+      this.cacheExpiresAt = Date.now() + 60 * 60 * 1000; // 1 hour in ms
+
       return scrymeServices;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(
         `Failed to fetch services from Scryme: ${error.message}.`,
       );

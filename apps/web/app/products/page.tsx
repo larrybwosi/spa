@@ -101,7 +101,7 @@ export default function ProductsPage() {
   }, [apiProducts]);
 
   const filteredProducts = products
-    .filter((prod) => {
+    .filter((prod: Product) => {
       const matchesSearch =
         prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         prod.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -112,7 +112,7 @@ export default function ProductsPage() {
 
       return matchesSearch && matchesCategory;
     })
-    .sort((a, b) => {
+    .sort((a: Product, b: Product) => {
       if (sortBy === "price-low") return a.price - b.price;
       if (sortBy === "price-high") return b.price - a.price;
       if (sortBy === "rating") return b.rating - a.rating;
@@ -308,7 +308,7 @@ export default function ProductsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {filteredProducts.map((product) => (
+            {filteredProducts.map((product: Product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
