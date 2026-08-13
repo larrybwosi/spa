@@ -8,6 +8,8 @@ import {
 } from "@nestjs/platform-fastify";
 import { FastifyRequest, FastifyReply } from "fastify";
 
+declare const module: any;
+
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
@@ -37,5 +39,10 @@ async function bootstrap() {
   console.log(
     `NestJS Spa and Wellness API is running on: http://localhost:${port}/api`,
   );
+
+  if (module.hot) {
+    module.hot.accept();
+    module.hot.dispose(() => app.close());
+  }
 }
 bootstrap();

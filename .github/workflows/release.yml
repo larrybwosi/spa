@@ -62,9 +62,29 @@ jobs:
         if: steps.changesets.outputs.published == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.extract_version.outputs.version }}
         run: |
-          gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes
+          VERSION="${{ steps.extract_version.outputs.version }}"
+          TAG="v${VERSION}"
+          if gh release view "$TAG" >/dev/null 2>&1 || git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Release/tag $TAG already exists. Finding the next available patch version..."
+            IFS='.' read -r major minor patch <<< "$VERSION"
+            if [ -z "$patch" ]; then
+              patch=0
+            fi
+            while true; do
+              patch=$((patch + 1))
+              NEXT_VERSION="${major}.${minor}.${patch}"
+              NEXT_TAG="v${NEXT_VERSION}"
+              if ! gh release view "$NEXT_TAG" >/dev/null 2>&1 && ! git rev-parse "$NEXT_TAG" >/dev/null 2>&1; then
+                VERSION="$NEXT_VERSION"
+                TAG="$NEXT_TAG"
+                break
+              fi
+            done
+            echo "Found available next version: $VERSION (Tag: $TAG)"
+          fi
+          echo "Creating single GitHub Release for tag: $TAG"
+          gh release create "$TAG" --title "$TAG" --generate-notes --target "${{ github.sha }}"
 
   build-and-push:
     name: Build and Push Docker Images

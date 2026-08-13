@@ -4,8 +4,8 @@ import {
   BadRequestException,
   Logger,
 } from "@nestjs/common";
-import { PrismaService } from "../prisma.service";
-import { ScrymeService } from "../scryme/scryme.service";
+import { PrismaService } from "@/prisma.service";
+import { ScrymeService } from "@/integrations/scryme/scryme.service";
 
 @Injectable()
 export class ServicesService {

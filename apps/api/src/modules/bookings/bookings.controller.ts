@@ -8,8 +8,8 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { BookingsService } from "./bookings.service";
-import { BetterAuthGuard } from "../auth/better-auth.guard";
-import { CurrentUser } from "../auth/current-user.decorator";
+import { BetterAuthGuard } from "@/modules/auth/better-auth.guard";
+import { CurrentUser } from "@/modules/auth/current-user.decorator";
 import { BookingStatus } from "@prisma/client";
 
 @Controller("bookings")

@@ -9,9 +9,9 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ServicesService } from "./services.service";
-import { BetterAuthGuard } from "../auth/better-auth.guard";
-import { RolesGuard } from "../auth/roles.guard";
-import { Roles } from "../auth/roles.decorator";
+import { BetterAuthGuard } from "@/modules/auth/better-auth.guard";
+import { RolesGuard } from "@/modules/auth/roles.guard";
+import { Roles } from "@/modules/auth/roles.decorator";
 import { Role } from "@prisma/client";
 
 @Controller("services")
