@@ -6,9 +6,9 @@ import {
   OnModuleInit,
   OnModuleDestroy,
 } from "@nestjs/common";
-import { PrismaService } from "../prisma.service";
-import { ScrymeService } from "../scryme/scryme.service";
-import { ProductsService } from "../products/products.service";
+import { PrismaService } from "@/prisma.service";
+import { ScrymeService } from "@/integrations/scryme/scryme.service";
+import { ProductsService } from "@/modules/products/products.service";
 import { User, Role } from "@prisma/client";
 import { CreateOrderDtoChannel } from "@scryme/sdk";
 

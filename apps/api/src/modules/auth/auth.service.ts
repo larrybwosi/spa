@@ -4,8 +4,8 @@ import {
   BadRequestException,
   ConflictException,
 } from "@nestjs/common";
-import { PrismaService } from "../prisma.service";
-import { ScrymeService } from "../scryme/scryme.service";
+import { PrismaService } from "@/prisma.service";
+import { ScrymeService } from "@/integrations/scryme/scryme.service";
 import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
 

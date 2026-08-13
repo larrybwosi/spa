@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ScrymeController } from "./scryme.controller";
 import { ScrymeService } from "./scryme.service";
-import { BetterAuthGuard } from "../auth/better-auth.guard";
+import { BetterAuthGuard } from "@/modules/auth/better-auth.guard";
 
 describe("ScrymeController Unit Tests", () => {
   let controller: ScrymeController;

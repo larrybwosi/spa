@@ -6,9 +6,9 @@ import {
   OnModuleInit,
   OnModuleDestroy,
 } from "@nestjs/common";
-import { PrismaService } from "../prisma.service";
-import { ScrymeService } from "../scryme/scryme.service";
-import { ServicesService } from "../services/services.service";
+import { PrismaService } from "@/prisma.service";
+import { ScrymeService } from "@/integrations/scryme/scryme.service";
+import { ServicesService } from "@/modules/services/services.service";
 import { BookingStatus, User, Role } from "@prisma/client";
 
 @Injectable()

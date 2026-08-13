@@ -1,12 +1,12 @@
 import "dotenv/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { PrismaService } from "../src/prisma.service";
-import { AuthService } from "../src/auth/auth.service";
-import { ProductsService } from "../src/products/products.service";
-import { ServicesService } from "../src/services/services.service";
-import { BookingsService } from "../src/bookings/bookings.service";
-import { OrdersService } from "../src/orders/orders.service";
-import { ScrymeService } from "../src/scryme/scryme.service";
+import { AuthService } from "../src/modules/auth/auth.service";
+import { ProductsService } from "../src/modules/products/products.service";
+import { ServicesService } from "../src/modules/services/services.service";
+import { BookingsService } from "../src/modules/bookings/bookings.service";
+import { OrdersService } from "../src/modules/orders/orders.service";
+import { ScrymeService } from "../src/integrations/scryme/scryme.service";
 import { Role, BookingStatus } from "@prisma/client";
 import {
   ConflictException,

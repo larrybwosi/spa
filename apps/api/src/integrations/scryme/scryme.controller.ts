@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ScrymeService } from "./scryme.service";
-import { BetterAuthGuard } from "../auth/better-auth.guard";
+import { BetterAuthGuard } from "@/modules/auth/better-auth.guard";
 import { CreateMemberDto } from "@scryme/sdk";
 
 @Controller("scryme")

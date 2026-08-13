@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, UseGuards } from "@nestjs/common";
 import { OrdersService } from "./orders.service";
-import { BetterAuthGuard } from "../auth/better-auth.guard";
-import { CurrentUser } from "../auth/current-user.decorator";
+import { BetterAuthGuard } from "@/modules/auth/better-auth.guard";
+import { CurrentUser } from "@/modules/auth/current-user.decorator";
 
 @Controller("orders")
 @UseGuards(BetterAuthGuard)
