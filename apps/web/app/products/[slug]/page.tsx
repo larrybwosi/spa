@@ -61,8 +61,14 @@ export default function ProductDetailPage() {
   } = useSWR(API_ENDPOINTS.products(), defaultFetcher);
 
   const product = useMemo(() => {
-    if (Array.isArray(apiProducts)) {
-      const apiProd = apiProducts.find(
+    const productsArray = Array.isArray(apiProducts)
+      ? apiProducts
+      : apiProducts && Array.isArray(apiProducts.data)
+        ? apiProducts.data
+        : null;
+
+    if (productsArray) {
+      const apiProd = productsArray.find(
         (p: ApiProduct) => p.slug === slug || slugify(p.name) === slug,
       );
       if (apiProd) {

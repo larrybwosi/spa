@@ -29,6 +29,14 @@ export class ScrymeService {
     return this.base.scrymeClient;
   }
 
+  public get scrymeServer(): ScrymeServerSDK {
+    return this.base.scrymeServer;
+  }
+
+  public get scrymeClient(): ScrymeClientSDK {
+    return this.base.scrymeClient;
+  }
+
   // --- Delegate Helper (if needed by tests/external callers) ---
   async execute<T>(
     cachePath: string,

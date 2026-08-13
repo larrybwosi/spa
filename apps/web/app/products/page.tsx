@@ -64,8 +64,14 @@ export default function ProductsPage() {
   } = useSWR(API_ENDPOINTS.products(), defaultFetcher);
 
   const products = useMemo(() => {
-    if (Array.isArray(apiProducts.data)) {
-      return apiProducts.data.map((apiProd: ApiProduct) => {
+    const productsArray = Array.isArray(apiProducts)
+      ? apiProducts
+      : apiProducts && Array.isArray(apiProducts.data)
+        ? apiProducts.data
+        : null;
+
+    if (productsArray) {
+      return productsArray.map((apiProd: ApiProduct) => {
         const fallbackMatch = FALLBACK_PRODUCTS.find(
           (fp) =>
             fp.id === apiProd.id ||
@@ -101,7 +107,7 @@ export default function ProductsPage() {
   }, [apiProducts]);
 
   const filteredProducts = products
-    .filter((prod) => {
+    .filter((prod: Product) => {
       const matchesSearch =
         prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         prod.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -112,7 +118,7 @@ export default function ProductsPage() {
 
       return matchesSearch && matchesCategory;
     })
-    .sort((a, b) => {
+    .sort((a: Product, b: Product) => {
       if (sortBy === "price-low") return a.price - b.price;
       if (sortBy === "price-high") return b.price - a.price;
       if (sortBy === "rating") return b.rating - a.rating;
@@ -308,7 +314,7 @@ export default function ProductsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {filteredProducts.map((product) => (
+            {filteredProducts.map((product: Product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
