@@ -11,27 +11,57 @@ import { ScrymeService } from "@/integrations/scryme/scryme.service";
 export class ServicesService {
   private readonly logger = new Logger(ServicesService.name);
 
+  // Cache to store the services and the timestamp when the cache expires
+  private cachedServices: any[] | null = null;
+  private cacheExpiresAt: number | null = null;
+
   constructor(
     private prisma: PrismaService,
     private scrymeService: ScrymeService,
   ) {}
 
   async getAll() {
+    // If cache is valid, return cached services
+    if (
+      this.cachedServices &&
+      this.cacheExpiresAt &&
+      this.cacheExpiresAt > Date.now()
+    ) {
+      return this.cachedServices;
+    }
+
     try {
       this.logger.debug("Fetching services from Scryme...");
-      const scrymeServices = await this.scrymeService.api.catalog.getServices();
-      return scrymeServices.data;
+      const scrymeServices = await this.scrymeService.listCatalogServices();
+
+      // Update cache
+      this.cachedServices = scrymeServices;
+      this.cacheExpiresAt = Date.now() + 60 * 60 * 1000; // 1 hour in ms
+
+      return scrymeServices;
     } catch (error: any) {
       this.logger.error(
-        `Failed to fetch services from Scryme: ${error.message}.`,
+        `Failed to fetch services from Scryme: ${error.message}. Falling back to stale cache.`,
       );
+      // Fallback to stale cache if available
+      if (this.cachedServices) {
+        return this.cachedServices;
+      }
       throw error;
     }
   }
 
   async getOne(id: string) {
+    // Try to find in cache first
+    if (this.cachedServices) {
+      const cached = this.cachedServices.find((s) => s.id === id);
+      if (cached) {
+        return cached;
+      }
+    }
+
     try {
-      const service = await this.scrymeService.api.catalog.getService(id);
+      const service = await this.scrymeService.api?.catalog?.getService(id);
       if (service) {
         return service.data;
       }

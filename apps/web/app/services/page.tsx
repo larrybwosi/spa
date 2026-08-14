@@ -10,6 +10,7 @@ import { defaultFetcher } from "../swr-fetcher";
 import { API_ENDPOINTS } from "../../lib/api";
 import { ShieldCheck, Droplet, Coffee, Sparkles } from "lucide-react";
 import { ServiceCard } from "../../components/ServiceCard";
+import { getServiceById, ServiceDetail } from "./services-data";
 
 interface ApiService {
   id: string;
@@ -64,7 +65,7 @@ export default function ServicesPage() {
     defaultFetcher,
   );
 
-  const services = useMemo(() => {
+  const services = useMemo<ServiceDetail[]>(() => {
     if (Array.isArray(apiServices?.data)) {
       return apiServices?.data.map((apiSvc: ApiService) => {
         const localMeta = getServiceById(apiSvc.id);
@@ -115,9 +116,9 @@ export default function ServicesPage() {
 
   const categories = useMemo(() => {
     const list = new Set(["Massage Therapy", "Skin Care", "Holistic Wellness"]);
-    services.forEach((s) => {
+    services.forEach((s: ServiceDetail) => {
       if (s.category) {
-        list.add(s.category.name);
+        list.add(s.category);
       }
     });
     return Array.from(list);
@@ -125,7 +126,7 @@ export default function ServicesPage() {
 
   const getServicesByCategory = (category: string): ServiceDetail[] => {
     return services.filter(
-      (s) => s.category?.name.toLowerCase() === category.toLowerCase(),
+      (s: ServiceDetail) => s.category?.toLowerCase() === category.toLowerCase(),
     );
   };
 

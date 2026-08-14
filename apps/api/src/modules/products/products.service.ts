@@ -32,13 +32,13 @@ export class ProductsService {
 
     try {
       console.log("Fetching products from Scryme...");
-      const scrymeProducts = await this.scryme.api.catalog.getProducts();
+      const scrymeProducts = await this.scryme.listCatalogProducts();
 
       // Update cache
-      this.cachedProducts = scrymeProducts.data;
+      this.cachedProducts = scrymeProducts;
       this.cacheExpiresAt = Date.now() + 60 * 60 * 1000; // 1 hour in ms
 
-      return scrymeProducts.data;
+      return scrymeProducts;
     } catch (error: any) {
       console.log(
         `Failed to fetch products from Scryme: ${error.message}. Falling back to stale cache.`,
@@ -55,8 +55,16 @@ export class ProductsService {
   }
 
   async getOne(id: string) {
+    // Try to find in cache first
+    if (this.cachedProducts) {
+      const cached = this.cachedProducts.find((p) => p.id === id);
+      if (cached) {
+        return cached;
+      }
+    }
+
     try {
-      const freshProduct = await this.scryme.api.catalog.getProduct(id);
+      const freshProduct = await this.scryme.api?.catalog?.getProduct(id);
       if (freshProduct) {
         return freshProduct.data;
       }

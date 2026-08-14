@@ -133,7 +133,7 @@ export default function ProductDetailPage() {
           id: apiProd.id,
           name: apiProd.name,
           slug: slug,
-          category: apiProd.category.name || "Wellness",
+          category: typeof apiProd.category === "object" ? String((apiProd.category as Record<string, unknown>)?.name || "Wellness") : (apiProd.category || "Wellness"),
           price: typeof apiProd.price === "number" ? apiProd.price : 45.0,
           stock: typeof apiProd.stock === "number" ? apiProd.stock : 100,
           rating: apiProd.rating || 4.8,
@@ -369,7 +369,7 @@ export default function ProductDetailPage() {
                 </div>
 
                 <Button
-                  onClick={handleAddToCart}
+                  onClick={() => handleAddToCart({ productId: product.id, quantity })}
                   className="flex-1 text-xs font-label uppercase tracking-[0.2em] bg-[#1C1B18] hover:bg-[#1C1B18]/85 text-[#F1ECE1] border-none py-6 rounded-none font-semibold transition-colors"
                 >
                   <ShoppingBag className="h-4 w-4 mr-2" />
