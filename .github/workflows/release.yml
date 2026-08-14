@@ -25,6 +25,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Detect Changeset Changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            changeset:
+              - '.changeset/*.md'
+              - '!.changeset/README.md'
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
@@ -39,6 +48,7 @@ jobs:
 
       - name: Create Release Pull Request or Publish
         id: changesets
+        if: github.event_name == 'workflow_dispatch' || steps.filter.outputs.changeset == 'true'
         uses: changesets/action@v1
         with:
           version: pnpm version-packages

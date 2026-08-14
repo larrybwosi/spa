@@ -16,6 +16,32 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Detect Changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'turbo.json'
+            web:
+              - 'apps/web/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'turbo.json'
+            docs:
+              - 'apps/docs/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'turbo.json'
+            android:
+              - 'apps/android/**'
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
@@ -23,7 +49,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -37,8 +63,35 @@ jobs:
       - name: Run Type Checking Checks
         run: DATABASE_URL=postgresql://dummy@localhost:5432/dummy pnpm exec turbo run check-types --affected
 
-      - name: Run Affected App Builds
-        run: DATABASE_URL=postgresql://dummy@localhost:5432/dummy NEXT_PUBLIC_API_URL=http://localhost:3001 BETTER_AUTH_SECRET=mock-secret SCRYME_CLIENT_ID=mock-id SCRYME_CLIENT_SECRET=mock-secret SCRYME_API_KEY=mock-key SCRYME_ORG_SLUG=mock-slug SCRYME_LOCATION_ID=mock-loc SCRYME_API_URL=https://api.scryme.tech pnpm exec turbo run build --affected
+      - name: Build API App
+        if: steps.filter.outputs.api == 'true'
+        run: DATABASE_URL=postgresql://dummy@localhost:5432/dummy NEXT_PUBLIC_API_URL=http://localhost:3001 BETTER_AUTH_SECRET=mock-secret SCRYME_CLIENT_ID=mock-id SCRYME_CLIENT_SECRET=mock-secret SCRYME_API_KEY=mock-key SCRYME_ORG_SLUG=mock-slug SCRYME_LOCATION_ID=mock-loc SCRYME_API_URL=https://api.scryme.tech pnpm exec turbo run build --filter=api
+
+      - name: Build Web App
+        if: steps.filter.outputs.web == 'true'
+        run: DATABASE_URL=postgresql://dummy@localhost:5432/dummy NEXT_PUBLIC_API_URL=http://localhost:3001 BETTER_AUTH_SECRET=mock-secret SCRYME_CLIENT_ID=mock-id SCRYME_CLIENT_SECRET=mock-secret SCRYME_API_KEY=mock-key SCRYME_ORG_SLUG=mock-slug SCRYME_LOCATION_ID=mock-loc SCRYME_API_URL=https://api.scryme.tech pnpm exec turbo run build --filter=web
+
+      - name: Build Docs App
+        if: steps.filter.outputs.docs == 'true'
+        run: DATABASE_URL=postgresql://dummy@localhost:5432/dummy NEXT_PUBLIC_API_URL=http://localhost:3001 BETTER_AUTH_SECRET=mock-secret SCRYME_CLIENT_ID=mock-id SCRYME_CLIENT_SECRET=mock-secret SCRYME_API_KEY=mock-key SCRYME_ORG_SLUG=mock-slug SCRYME_LOCATION_ID=mock-loc SCRYME_API_URL=https://api.scryme.tech pnpm exec turbo run build --filter=docs
+
+      - name: Set up JDK 21 for Android Build
+        if: steps.filter.outputs.android == 'true'
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "gradle"
+
+      - name: Make Gradle Wrapper Executable
+        if: steps.filter.outputs.android == 'true'
+        run: chmod +x apps/android/gradlew
+
+      - name: Build Android App
+        if: steps.filter.outputs.android == 'true'
+        run: |
+          cd apps/android
+          ./gradlew assembleDebug
 
       - name: Run Tests
         run: DATABASE_URL=postgresql://dummy@localhost:5432/dummy pnpm exec turbo run test --affected
