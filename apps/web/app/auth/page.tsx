@@ -39,12 +39,20 @@ function AuthForm() {
     setIsLoading(true);
 
     try {
-      const response = await scrymeClient.auth.signUp({
-        name: authName,
-        email: authEmail,
-        password: authPassword,
-      });
-      console.log(response);
+      if (authMode === "login") {
+        const response = await scrymeClient.auth.signUp({
+          name: authName,
+          email: authEmail,
+          password: authPassword,
+        });
+        console.log(response);
+      } else {
+        const response = await scrymeClient.auth.signIn({
+          email: authEmail,
+          password: authPassword,
+        });
+        console.log(response);
+      }
     } catch (err) {
       const errorObj = err as Error;
       setAuthError(errorObj.message || "An error occurred");

@@ -236,8 +236,8 @@ export default function ServiceDetailPage() {
     <div className="relative min-h-screen bg-brand-cream text-brand-charcoal overflow-x-hidden font-sans selection:bg-brand-primary/20">
       {/* AMBIENT BACKGROUND ACCENTS */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10">
-        <div className="absolute -top-40 -right-40 w-[28rem] h-[28rem] rounded-full bg-brand-primary/[0.06] blur-3xl"></div>
-        <div className="absolute top-1/2 -left-40 w-[24rem] h-[24rem] rounded-full bg-brand-primary/[0.04] blur-3xl"></div>
+        <div className="absolute -top-40 -right-40 w-md h-md rounded-full bg-brand-primary/6 blur-3xl"></div>
+        <div className="absolute top-1/2 -left-40 w-md h-md rounded-full bg-brand-primary/4 blur-3xl"></div>
       </div>
 
       <Navbar navLinks={serviceDetailNavLinks} activeHref="/services" />

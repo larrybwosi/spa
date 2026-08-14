@@ -8,14 +8,13 @@ import { Skeleton } from "@repo/ui/skeleton";
 import useSWR from "swr";
 import { defaultFetcher } from "../swr-fetcher";
 import { API_ENDPOINTS } from "../../lib/api";
-import { getServiceById, ServiceDetail } from "./services-data";
 import { ShieldCheck, Droplet, Coffee, Sparkles } from "lucide-react";
 import { ServiceCard } from "../../components/ServiceCard";
 
 interface ApiService {
   id: string;
   name?: string;
-  category?: string;
+  category?: { name: string };
   description?: string;
   duration?: number;
   price?: number;
@@ -66,8 +65,8 @@ export default function ServicesPage() {
   );
 
   const services = useMemo(() => {
-    if (Array.isArray(apiServices)) {
-      return apiServices.map((apiSvc: ApiService) => {
+    if (Array.isArray(apiServices?.data)) {
+      return apiServices?.data.map((apiSvc: ApiService) => {
         const localMeta = getServiceById(apiSvc.id);
         const price =
           typeof apiSvc.price === "number"
@@ -81,7 +80,7 @@ export default function ServicesPage() {
         return {
           id: apiSvc.id,
           name: apiSvc.name || localMeta?.name || "Bespoke Treatment",
-          category: localMeta?.category || apiSvc.category || "Holistic Wellness",
+          category: apiSvc?.category?.name || "Holistic Wellness",
           description:
             apiSvc.description ||
             localMeta?.description ||
@@ -118,7 +117,7 @@ export default function ServicesPage() {
     const list = new Set(["Massage Therapy", "Skin Care", "Holistic Wellness"]);
     services.forEach((s) => {
       if (s.category) {
-        list.add(s.category);
+        list.add(s.category.name);
       }
     });
     return Array.from(list);
@@ -126,7 +125,7 @@ export default function ServicesPage() {
 
   const getServicesByCategory = (category: string): ServiceDetail[] => {
     return services.filter(
-      (s) => s.category.toLowerCase() === category.toLowerCase(),
+      (s) => s.category?.name.toLowerCase() === category.toLowerCase(),
     );
   };
 

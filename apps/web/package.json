@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@repo/ui": "workspace:*",
-    "@scryme/sdk": "^9.66.0",
+    "@scryme/sdk": "^9.67.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^13.1.0",
@@ -20,6 +20,7 @@
     "next": "16.2.12",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "slugify": "^1.6.9",
     "swr": "^2.5.0",
     "tailwind-merge": "^3.6.0"
   },

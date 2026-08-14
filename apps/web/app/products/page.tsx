@@ -9,9 +9,9 @@ import { Footer } from "../../components/Footer";
 import useSWR from "swr";
 import { defaultFetcher } from "../swr-fetcher";
 import { API_ENDPOINTS } from "../../lib/api";
-import { FALLBACK_PRODUCTS, Product, slugify } from "./product-data";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { ProductCard } from "../../components/ProductCard";
+import slugify from "slugify";
 
 interface ApiProduct {
   id: string;
@@ -20,6 +20,33 @@ interface ApiProduct {
   price?: number;
   stock?: number;
   description?: string;
+  category?: string;
+  rating?: number;
+  reviewsCount?: number;
+  image?: string;
+  features?: {
+    materials?: string;
+    dimensions?: string;
+    shipping?: string;
+  };
+}
+
+interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  price: number;
+  stock: number;
+  rating: number;
+  reviewsCount: number;
+  image: string;
+  description: string;
+  features: {
+    materials: string;
+    dimensions: string;
+    shipping: string;
+  };
 }
 
 const productsNavLinks = [
@@ -62,6 +89,7 @@ export default function ProductsPage() {
     error,
     isLoading,
   } = useSWR(API_ENDPOINTS.products(), defaultFetcher);
+  console.log(apiProducts);
 
   const products = useMemo(() => {
     const productsArray = Array.isArray(apiProducts)
@@ -71,37 +99,23 @@ export default function ProductsPage() {
         : null;
 
     if (productsArray) {
-      return productsArray.map((apiProd: ApiProduct) => {
-        const fallbackMatch = FALLBACK_PRODUCTS.find(
-          (fp) =>
-            fp.id === apiProd.id ||
-            fp.name.toLowerCase() === apiProd.name.toLowerCase(),
-        );
-        return {
-          id: apiProd.id,
-          name: apiProd.name,
-          slug: apiProd.slug || fallbackMatch?.slug || slugify(apiProd.name),
-          category: fallbackMatch?.category || "Wellness",
-          price: typeof apiProd.price === "number" ? apiProd.price : 45.0,
-          stock: typeof apiProd.stock === "number" ? apiProd.stock : 100,
-          rating: fallbackMatch?.rating || 4.8,
-          reviewsCount: fallbackMatch?.reviewsCount || 12,
-          image:
-            fallbackMatch?.image ||
-            "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000",
-          description:
-            apiProd.description ||
-            fallbackMatch?.description ||
-            "Bespoke Aura Luxury product.",
-          features: fallbackMatch?.features || {
-            materials:
-              "Premium organic ingredients and/or sustainable luxury composites.",
-            dimensions: "Standard retail packaging.",
-            shipping:
-              "Complimentary premium shipping. Processed within 24 hours.",
-          },
-        } as Product;
-      });
+      return productsArray.map((apiProd: ApiProduct) => ({
+        id: apiProd.id,
+        name: apiProd.name,
+        slug: apiProd.slug || slugify(apiProd.name, { lower: true, strict: true }),
+        category: apiProd.category || "Wellness",
+        price: typeof apiProd.price === "number" ? apiProd.price : 45.0,
+        stock: typeof apiProd.stock === "number" ? apiProd.stock : 100,
+        rating: apiProd.rating || 4.8,
+        reviewsCount: apiProd.reviewsCount || 12,
+        image: apiProd.image || "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000",
+        description: apiProd.description || "Bespoke Aura Luxury product.",
+        features: apiProd.features || {
+          materials: "Premium organic ingredients and/or sustainable luxury composites.",
+          dimensions: "Standard retail packaging.",
+          shipping: "Complimentary premium shipping. Processed within 24 hours.",
+        },
+      } as Product));
     }
     return [];
   }, [apiProducts]);

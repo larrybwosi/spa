@@ -31,7 +31,6 @@ export class ScrymeController {
       name: string;
       email: string;
       phone?: string;
-      zitadelUserId?: string;
     },
   ) {
     return this.scrymeService.registerCustomer(body);

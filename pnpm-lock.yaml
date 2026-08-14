@@ -45,8 +45,8 @@ importers:
         specifier: ^7.9.1
         version: 7.9.1(prisma@7.9.1(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.2))(typescript@5.9.2)
       '@scryme/sdk':
-        specifier: ^9.66.0
-        version: 9.66.0(react@19.2.0)
+        specifier: ^9.67.0
+        version: 9.67.0(react@19.2.0)
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
@@ -209,8 +209,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@scryme/sdk':
-        specifier: ^9.66.0
-        version: 9.66.0(react@19.2.0)
+        specifier: ^9.67.0
+        version: 9.67.0(react@19.2.0)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -232,6 +232,9 @@ importers:
       react-dom:
         specifier: ^19.2.0
         version: 19.2.0(react@19.2.0)
+      slugify:
+        specifier: ^1.6.9
+        version: 1.6.9
       swr:
         specifier: ^2.5.0
         version: 2.5.0(react@19.2.0)
@@ -2280,8 +2283,8 @@ packages:
       react-redux:
         optional: true
 
-  '@scryme/sdk@9.66.0':
-    resolution: {integrity: sha512-piG8F5SeZbw+BYEHLGi/tnxcHhnQuxOY9HN1nnVOF8FUap+aNWmyZTBmk7vchMwKg1cauwGd26RaqHfOqQ3lCA==}
+  '@scryme/sdk@9.67.0':
+    resolution: {integrity: sha512-XDgqjQnYJh0kt5uMtI4/jNW0bl0OSNWxD8pXDRYXGnJosV1WTuEwXESSS9CbONj1b3tt3WRPYZ5RGKOGu2dMAw==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
     peerDependenciesMeta:
@@ -5686,6 +5689,10 @@ packages:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
     engines: {node: '>=8'}
 
+  slugify@1.6.9:
+    resolution: {integrity: sha512-vZ7rfeehZui7wQs438JXBckYLkIIdfHOXsaVEUMyS5fHo1483l1bMdo0EDSWYclY0yZKFOipDy4KHuKs6ssvdg==}
+    engines: {node: '>=8.0.0'}
+
   sonic-boom@4.2.1:
     resolution: {integrity: sha512-w6AxtubXa2wTXAUsZMMWERrsIRAdrK0Sc+FUytWvYAhBJLyuI4llrMIC1DtlNSdI99EI86KZum2MMq3EAZlF9Q==}
 
@@ -8481,7 +8488,7 @@ snapshots:
       react: 19.2.0
       react-redux: 9.3.0(@types/react@19.2.2)(react@19.2.0)(redux@5.0.1)
 
-  '@scryme/sdk@9.66.0(react@19.2.0)':
+  '@scryme/sdk@9.67.0(react@19.2.0)':
     dependencies:
       axios: 1.19.0
     optionalDependencies:
@@ -12284,6 +12291,8 @@ snapshots:
   signal-exit@4.1.0: {}
 
   slash@3.0.0: {}
+
+  slugify@1.6.9: {}
 
   sonic-boom@4.2.1:
     dependencies:

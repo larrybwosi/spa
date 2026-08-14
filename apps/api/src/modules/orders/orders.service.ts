@@ -141,25 +141,13 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
   async getOne(id: string, user: User) {
     let order: any = null;
     try {
-      const scrymeOrders = await this.scrymeService.listOrders();
-      const found = scrymeOrders.find((o) => o.id === id);
+      const scrymeOrders = await this.scrymeService.api.orders.getOrders();
+      const found = scrymeOrders.data.find((o) => o.id === id);
       if (found) {
         order = await this.mapScrymeOrder(found);
       }
     } catch {
       // Ignored, fallback below
-    }
-
-    if (!order) {
-      order = await this.prisma.order.findUnique({
-        where: { id },
-        include: {
-          client: true,
-          items: {
-            include: { product: true },
-          },
-        },
-      });
     }
 
     if (!order) {

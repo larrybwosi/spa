@@ -10,12 +10,7 @@ import { Footer } from "../../../components/Footer";
 import useSWR from "swr";
 import { defaultFetcher } from "../../swr-fetcher";
 import { API_ENDPOINTS } from "../../../lib/api";
-import {
-  FALLBACK_PRODUCTS,
-  Product,
-  MOCK_REVIEWS,
-  slugify,
-} from "../product-data";
+import slugify from "slugify";
 import {
   X,
   ChevronRight,
@@ -28,7 +23,9 @@ import {
   RotateCcw,
   ShoppingBag,
   ChevronDown,
+  MessageCircle,
 } from "lucide-react";
+import { scrymeClient } from "../../../lib/scryme";
 
 interface ApiProduct {
   id: string;
@@ -37,6 +34,41 @@ interface ApiProduct {
   price?: number;
   stock?: number;
   description?: string;
+  category?: string;
+  rating?: number;
+  reviewsCount?: number;
+  image?: string;
+  features?: {
+    materials?: string;
+    dimensions?: string;
+    shipping?: string;
+  };
+}
+
+interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  price: number;
+  stock: number;
+  rating: number;
+  reviewsCount: number;
+  image: string;
+  description: string;
+  features: {
+    materials: string;
+    dimensions: string;
+    shipping: string;
+  };
+}
+
+interface Review {
+  id: string;
+  author: string;
+  date: string;
+  rating: number;
+  comment: string;
 }
 
 const productDetailNavLinks = [
@@ -44,6 +76,31 @@ const productDetailNavLinks = [
   { label: "Services", href: "/services" },
   { label: "Products", href: "/products" },
   { label: "Booking", href: "/booking" },
+];
+
+// Mock reviews for demonstration - this would come from your API
+const MOCK_REVIEWS: Review[] = [
+  {
+    id: "1",
+    author: "Sarah K.",
+    date: "May 2026",
+    rating: 5,
+    comment: "Absolutely transformative. The quality is unmatched, and the attention to detail makes it feel truly bespoke. I've already recommended to my entire wellness circle.",
+  },
+  {
+    id: "2",
+    author: "James M.",
+    date: "April 2026",
+    rating: 5,
+    comment: "The craftsmanship is exceptional. It's rare to find products that combine luxury with genuine sustainability. Worth every penny.",
+  },
+  {
+    id: "3",
+    author: "Elena R.",
+    date: "March 2026",
+    rating: 4,
+    comment: "Beautiful design and thoughtful packaging. The product exceeded my expectations. Would love to see more color options in the future.",
+  },
 ];
 
 export default function ProductDetailPage() {
@@ -69,36 +126,24 @@ export default function ProductDetailPage() {
 
     if (productsArray) {
       const apiProd = productsArray.find(
-        (p: ApiProduct) => p.slug === slug || slugify(p.name) === slug,
+        (p: ApiProduct) => p.slug === slug || slugify(p.name, { lower: true, strict: true }) === slug,
       );
       if (apiProd) {
-        const fallbackMatch = FALLBACK_PRODUCTS.find(
-          (fp) =>
-            fp.id === apiProd.id ||
-            fp.name.toLowerCase() === apiProd.name.toLowerCase(),
-        );
         return {
           id: apiProd.id,
           name: apiProd.name,
           slug: slug,
-          category: fallbackMatch?.category || "Wellness",
+          category: apiProd.category.name || "Wellness",
           price: typeof apiProd.price === "number" ? apiProd.price : 45.0,
           stock: typeof apiProd.stock === "number" ? apiProd.stock : 100,
-          rating: fallbackMatch?.rating || 4.8,
-          reviewsCount: fallbackMatch?.reviewsCount || 15,
-          image:
-            fallbackMatch?.image ||
-            "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000",
-          description:
-            apiProd.description ||
-            fallbackMatch?.description ||
-            "Bespoke Aura Luxury product.",
-          features: fallbackMatch?.features || {
-            materials:
-              "Premium organic ingredients and/or sustainable luxury composites.",
+          rating: apiProd.rating || 4.8,
+          reviewsCount: apiProd.reviewsCount || 15,
+          image: apiProd.image || "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000",
+          description: apiProd.description || "Bespoke Aura Luxury product.",
+          features: apiProd.features || {
+            materials: "Premium organic ingredients and/or sustainable luxury composites.",
             dimensions: "Standard retail packaging.",
-            shipping:
-              "Complimentary premium shipping. Processed within 24 hours.",
+            shipping: "Complimentary premium shipping. Processed within 24 hours.",
           },
         } as Product;
       }
@@ -110,11 +155,12 @@ export default function ProductDetailPage() {
   const decrementQuantity = () =>
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
-  const handleAddToCart = () => {
-    setAddedToCartToast(true);
-    setTimeout(() => {
-      setAddedToCartToast(false);
-    }, 4000);
+  const handleAddToCart = async ({ productId, quantity }: { productId: string; quantity: number }) => {
+    const res = await scrymeClient.cart.add({
+      quantity,
+      productId,
+    });
+    console.log(res);
   };
 
   const toggleSection = (section: string) => {
@@ -425,7 +471,7 @@ export default function ProductDetailPage() {
         </div>
       </main>
 
-      {/* REVIEWS */}
+      {/* REVIEWS SECTION WITH EMPTY STATE */}
       <section className="bg-[#3F4F41] py-20 sm:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
@@ -436,37 +482,58 @@ export default function ProductDetailPage() {
               Honest feedback from our sanctuary
             </h2>
 
-            <div className="space-y-8 divide-y divide-[#F1ECE1]/10">
-              {MOCK_REVIEWS.map((review) => (
-                <div key={review.id} className="pt-8 first:pt-0">
-                  <div className="flex items-center justify-between gap-4 mb-3">
-                    <div className="space-y-1">
-                      <h4 className="font-display text-base text-[#F1ECE1]">
-                        {review.author}
-                      </h4>
-                      <span className="text-[10px] text-[#DCD3C2]/45 font-body font-light block">
-                        Verified Sanctuary Client · {review.date}
-                      </span>
+            {MOCK_REVIEWS && MOCK_REVIEWS.length > 0 ? (
+              <div className="space-y-8 divide-y divide-[#F1ECE1]/10">
+                {MOCK_REVIEWS.map((review) => (
+                  <div key={review.id} className="pt-8 first:pt-0">
+                    <div className="flex items-center justify-between gap-4 mb-3">
+                      <div className="space-y-1">
+                        <h4 className="font-display text-base text-[#F1ECE1]">
+                          {review.author}
+                        </h4>
+                        <span className="text-[10px] text-[#DCD3C2]/45 font-body font-light block">
+                          Verified Sanctuary Client · {review.date}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-[#A9784F] shrink-0">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-3 w-3 ${
+                              i < review.rating
+                                ? "fill-[#A9784F]"
+                                : "text-[#F1ECE1]/15"
+                            }`}
+                          />
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex items-center text-[#A9784F] shrink-0">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-3 w-3 ${
-                            i < review.rating
-                              ? "fill-[#A9784F]"
-                              : "text-[#F1ECE1]/15"
-                          }`}
-                        />
-                      ))}
-                    </div>
+                    <p className="text-sm text-[#DCD3C2]/75 font-body font-light leading-relaxed">
+                      {review.comment}
+                    </p>
                   </div>
-                  <p className="text-sm text-[#DCD3C2]/75 font-body font-light leading-relaxed">
-                    {review.comment}
-                  </p>
+                ))}
+              </div>
+            ) : (
+              /* Empty State for Reviews */
+              <div className="bg-[#F1ECE1]/5 border border-[#F1ECE1]/10 p-12 text-center">
+                <div className="inline-flex w-16 h-16 bg-[#A9784F]/10 text-[#A9784F] rounded-full items-center justify-center mb-4">
+                  <MessageCircle className="h-6 w-6" />
                 </div>
-              ))}
-            </div>
+                <h3 className="font-display text-xl text-[#F1ECE1] mb-2">
+                  No reviews yet
+                </h3>
+                <p className="text-sm text-[#DCD3C2]/60 font-body font-light max-w-md mx-auto">
+                  Be the first to share your experience with this product. Your
+                  feedback helps our community make informed choices.
+                </p>
+                <Button
+                  className="mt-6 text-xs font-label uppercase tracking-widest bg-[#A9784F] hover:bg-[#A9784F]/85 text-[#1C1B18] px-8 py-4 rounded-none font-semibold transition-colors"
+                >
+                  Write a Review
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </section>

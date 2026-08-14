@@ -1,13 +1,9 @@
 import {
   Injectable,
-  UnauthorizedException,
   BadRequestException,
-  ConflictException,
 } from "@nestjs/common";
 import { PrismaService } from "@/prisma.service";
 import { ScrymeService } from "@/integrations/scryme/scryme.service";
-import * as bcrypt from "bcrypt";
-import { randomBytes } from "crypto";
 
 @Injectable()
 export class AuthService {
@@ -25,56 +21,23 @@ export class AuthService {
     name: string;
     email: string;
     password?: string;
-    role?: "ADMIN" | "STAFF" | "CLIENT";
   }) {
-    const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
-    });
-    if (existing) {
-      throw new ConflictException("A user with this email already exists");
-    }
-
-    if (dto.role && dto.role !== "CLIENT") {
-      throw new BadRequestException("Only customer signup is allowed");
-    }
-
-    const hashedPassword = dto.password
-      ? await bcrypt.hash(dto.password, 10)
-      : null;
-    const resolvedRole = "CLIENT";
 
     // 1. Heavy lifting on Scryme side (only customer/client)
     try {
-      await this.scrymeService.registerCustomer({
+      const result = await this.scrymeService.api.customer.auth.signUp({
         name: dto.name,
         email: dto.email.toLowerCase(),
+        password: dto.password,
       });
+
+      return result;
     } catch (error: any) {
       // Log and propagate/handle Scryme errors to fulfill requirements
       throw new BadRequestException(
         `Failed to register user in Scryme: ${error.message}`,
       );
     }
-
-    // 2. Local fallback persistence to allow standard app session management and local DB relations
-    const user = await this.prisma.user.create({
-      data: {
-        name: dto.name,
-        email: dto.email.toLowerCase(),
-        role: resolvedRole,
-        accounts: dto.password
-          ? {
-              create: {
-                accountId: dto.email.toLowerCase(),
-                providerId: "credential",
-                password: hashedPassword,
-              },
-            }
-          : undefined,
-      },
-    });
-
-    return user;
   }
 
   /**
@@ -82,64 +45,11 @@ export class AuthService {
    * Only allows customers/clients to authenticate.
    */
   async signIn(dto: { email: string; password?: string }) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
-      include: { accounts: true },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException("Invalid email or password");
-    }
-
-    if (user.role !== "CLIENT") {
-      throw new UnauthorizedException(
-        "Access denied: only customer authentication is allowed",
-      );
-    }
-
-    if (dto.password) {
-      const passwordAccount = user.accounts.find(
-        (acc) => acc.providerId === "credential",
-      );
-      if (!passwordAccount || !passwordAccount.password) {
-        throw new UnauthorizedException("Invalid email or password");
-      }
-
-      const isMatch = await bcrypt.compare(
-        dto.password,
-        passwordAccount.password,
-      );
-      if (!isMatch) {
-        throw new UnauthorizedException("Invalid email or password");
-      }
-    }
-
-    // Create a new session matching Better Auth specs
-    const token = randomBytes(32).toString("hex");
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days session lifetime
-
-    const session = await this.prisma.session.create({
-      data: {
-        token,
-        userId: user.id,
-        expiresAt,
-      },
-      include: {
-        user: true,
-      },
-    });
-
-    return {
-      token,
-      session,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    };
+    const result = await this.scrymeService.api.customer.auth.signIn({
+      email: dto.email,
+      password: dto.password,
+    })
+    return result;
   }
 
   /**

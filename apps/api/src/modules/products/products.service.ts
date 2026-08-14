@@ -32,13 +32,13 @@ export class ProductsService {
 
     try {
       console.log("Fetching products from Scryme...");
-      const scrymeProducts = await this.scryme.listCatalogProducts();
+      const scrymeProducts = await this.scryme.api.catalog.getProducts();
 
       // Update cache
-      this.cachedProducts = scrymeProducts;
+      this.cachedProducts = scrymeProducts.data;
       this.cacheExpiresAt = Date.now() + 60 * 60 * 1000; // 1 hour in ms
 
-      return scrymeProducts;
+      return scrymeProducts.data;
     } catch (error: any) {
       console.log(
         `Failed to fetch products from Scryme: ${error.message}. Falling back to stale cache.`,
@@ -55,22 +55,18 @@ export class ProductsService {
   }
 
   async getOne(id: string) {
-    // Attempt to get from cache first
-    if (this.cachedProducts) {
-      const found = this.cachedProducts.find((p) => p.id === id);
-      if (found) {
-        return found;
-      }
-    }
-
     try {
-      const freshProducts = await this.scryme.api.catalog.getProducts();
-      const foundFresh = freshProducts.data.find((p) => p.id === id);
-      if (foundFresh) {
-        return foundFresh;
+      const freshProduct = await this.scryme.api.catalog.getProduct(id);
+      if (freshProduct) {
+        return freshProduct.data;
       }
-    } catch {
-      // Ignored, handle exception if not found below
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        console.log(error);
+        throw error;
+      } else {
+        throw error;
+      }
     }
 
     throw new NotFoundException(`Product with ID ${id} not found`);
