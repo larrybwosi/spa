@@ -36,6 +36,33 @@ describe("Spa Platform End-to-End Core Logic Tests", () => {
         {
           provide: ScrymeService,
           useValue: {
+            api: {
+              customer: {
+                auth: {
+                  signUp: jest.fn().mockResolvedValue({
+                    token: "mock-token",
+                    session: {
+                      expiresAt: new Date(Date.now() + 3600000).toISOString(),
+                    },
+                    user: { name: "Mock User", email: "mock@example.com" },
+                  }),
+                  signIn: jest.fn().mockImplementation((dto) =>
+                    Promise.resolve({
+                      token: "mock-token",
+                      session: {
+                        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+                        userId: "mock-user-id",
+                      },
+                      user: {
+                        name: "Mock User",
+                        email: dto.email,
+                        role: "CLIENT",
+                      },
+                    }),
+                  ),
+                },
+              },
+            },
             registerCustomer: jest
               .fn()
               .mockResolvedValue({ id: "mock-customer-id", success: true }),

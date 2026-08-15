@@ -1,6 +1,8 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { PrismaService } from "@/prisma.service";
 import { ScrymeService } from "@/integrations/scryme/scryme.service";
@@ -21,23 +23,51 @@ export class AuthService {
     name: string;
     email: string;
     password?: string;
+    role?: any;
   }) {
+    // Check if user already exists locally
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email.toLowerCase() },
+    });
+    if (existing) {
+      throw new ConflictException("Email already registered");
+    }
 
     // 1. Heavy lifting on Scryme side (only customer/client)
     try {
-      const result = await this.scrymeService.api.customer.auth.signUp({
+      await this.scrymeService.api.customer.auth.signUp({
         name: dto.name,
         email: dto.email.toLowerCase(),
         password: dto.password,
       });
-
-      return result;
     } catch (error: any) {
       // Log and propagate/handle Scryme errors to fulfill requirements
       throw new BadRequestException(
         `Failed to register user in Scryme: ${error.message}`,
       );
     }
+
+    // 2. Create User and Account locally
+    const user = await this.prisma.user.create({
+      data: {
+        name: dto.name,
+        email: dto.email.toLowerCase(),
+        role: "CLIENT",
+      },
+    });
+
+    if (dto.password) {
+      await this.prisma.account.create({
+        data: {
+          accountId: user.id,
+          providerId: "credentials",
+          userId: user.id,
+          password: dto.password,
+        },
+      });
+    }
+
+    return user;
   }
 
   /**
@@ -45,11 +75,38 @@ export class AuthService {
    * Only allows customers/clients to authenticate.
    */
   async signIn(dto: { email: string; password?: string }) {
+    // 1. Remote sign in
     const result = await this.scrymeService.api.customer.auth.signIn({
       email: dto.email,
       password: dto.password,
-    })
-    return result;
+    });
+
+    // 2. Local session creation if successful
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email.toLowerCase() },
+    });
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+
+    const token = result.token || "mock-token";
+    const expiresAt = result.session?.expiresAt
+      ? new Date(result.session.expiresAt)
+      : new Date(Date.now() + 60 * 60 * 1000);
+
+    const session = await this.prisma.session.create({
+      data: {
+        token,
+        expiresAt,
+        userId: user.id,
+      },
+    });
+
+    return {
+      token,
+      user,
+      session,
+    };
   }
 
   /**

@@ -39,12 +39,17 @@ export class AuthController {
     const result = await this.authService.signIn(body);
 
     // Set a HTTP-only cookie matching Better Auth session-token storage
-    res.cookie("better-auth.session-token", result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      expires: result.session.expiresAt,
-    });
+    if (result.session) {
+      res.cookie("better-auth.session-token", result.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        expires:
+          typeof result.session.expiresAt === "string"
+            ? new Date(result.session.expiresAt)
+            : result.session.expiresAt,
+      });
+    }
 
     return result;
   }

@@ -15,7 +15,7 @@ import {
   Star,
 } from "lucide-react";
 import { FALLBACK_SERVICES } from "./services/services-data";
-import { FALLBACK_PRODUCTS } from "./products/product-data";
+import { FALLBACK_PRODUCTS, Product } from "./products/product-data";
 
 const homeNavLinks = [
   { label: "About", href: "#about" },
@@ -507,7 +507,7 @@ export default function Home() {
           </Reveal>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {FALLBACK_PRODUCTS.slice(3, 6).map((product, idx) => (
+            {FALLBACK_PRODUCTS.slice(3, 6).map((product: Product, idx: number) => (
               <Reveal
                 key={product.id}
                 delay={idx * 120}
