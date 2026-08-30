@@ -45,8 +45,8 @@ importers:
         specifier: ^7.9.1
         version: 7.9.1(prisma@7.9.1(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.2))(typescript@5.9.2)
       '@scryme/sdk':
-        specifier: ^9.67.0
-        version: 9.67.0(react@19.2.0)
+        specifier: ^9.71.0
+        version: 9.71.0(react@19.2.0)
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
@@ -209,8 +209,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@scryme/sdk':
-        specifier: ^9.67.0
-        version: 9.67.0(react@19.2.0)
+        specifier: ^9.71.0
+        version: 9.71.0(react@19.2.0)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -2283,8 +2283,8 @@ packages:
       react-redux:
         optional: true
 
-  '@scryme/sdk@9.67.0':
-    resolution: {integrity: sha512-XDgqjQnYJh0kt5uMtI4/jNW0bl0OSNWxD8pXDRYXGnJosV1WTuEwXESSS9CbONj1b3tt3WRPYZ5RGKOGu2dMAw==}
+  '@scryme/sdk@9.71.0':
+    resolution: {integrity: sha512-SFSdi5997Jvsgund1MTYc4F9DjpUuZnciU8KUpaJrMiGqiD79aGRi5xsZK62uDIqktS29vqWGaPkMVKljkQfNA==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
     peerDependenciesMeta:
@@ -8488,7 +8488,7 @@ snapshots:
       react: 19.2.0
       react-redux: 9.3.0(@types/react@19.2.2)(react@19.2.0)(redux@5.0.1)
 
-  '@scryme/sdk@9.67.0(react@19.2.0)':
+  '@scryme/sdk@9.71.0(react@19.2.0)':
     dependencies:
       axios: 1.19.0
     optionalDependencies:

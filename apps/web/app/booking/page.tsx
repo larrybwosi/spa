@@ -22,6 +22,7 @@ import {
   Clock,
   Lock
 } from "lucide-react";
+import { scrymeClient } from "../../lib/scryme";
 
 interface Service {
   id: string;
@@ -94,21 +95,13 @@ function BookingForm({
     }
 
     try {
-      const res = await fetch(API_ENDPOINTS.bookings(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          serviceId: targetServiceId,
-          staffId: "staff1", // Default Elena Rostova
-          dateTime: new Date(bookingDate).toISOString(),
-        }),
-        credentials: "include",
-      });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || "Failed to submit booking");
-      }
+        await scrymeClient.bookings.create({
+            serviceId: targetServiceId,
+            notes: '',
+            scheduledStartTime: new Date(bookingDate).toISOString(),
+            staffIds: [],
+        })
 
       setBookingSubmitted(true);
       setTimeout(() => {

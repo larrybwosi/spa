@@ -40,14 +40,14 @@ function AuthForm() {
 
     try {
       if (authMode === "login") {
-        const response = await scrymeClient.auth.signUp({
+        const response = await scrymeClient.customer.auth.signUp({
           name: authName,
           email: authEmail,
           password: authPassword,
         });
         console.log(response);
       } else {
-        const response = await scrymeClient.auth.signIn({
+        const response = await scrymeClient.customer.auth.signIn({
           email: authEmail,
           password: authPassword,
         });
