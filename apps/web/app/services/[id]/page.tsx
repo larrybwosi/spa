@@ -8,9 +8,10 @@ import { Button } from "@repo/ui/button";
 import { Skeleton } from "@repo/ui/skeleton";
 import { Navbar } from "../../../components/Navbar";
 import { Footer } from "../../../components/Footer";
+import { EmptyState } from "../../../components/EmptyState";
 import useSWR from "swr";
 import { defaultFetcher } from "../../swr-fetcher";
-import { getServiceById, ServiceDetail } from "../services-data";
+import { ServiceDetail } from "../services-data";
 import { API_ENDPOINTS } from "../../../lib/api";
 import {
   ChevronRight,
@@ -45,43 +46,40 @@ export default function ServiceDetailPage() {
   );
 
   const service = useMemo(() => {
-    if (apiSvc) {
-      const localMeta = getServiceById(apiSvc.id) || getServiceById(id);
+    const rawData = apiSvc?.data || apiSvc;
+    if (rawData && rawData.id) {
       const price =
-        typeof apiSvc.price === "number"
-          ? apiSvc.price
-          : localMeta?.price || 120;
+        typeof rawData.price === "number" ? rawData.price : 120;
       const duration =
-        typeof apiSvc.duration === "number"
-          ? apiSvc.duration
-          : localMeta?.duration || 60;
+        typeof rawData.duration === "number" ? rawData.duration : 60;
+      const catName =
+        typeof rawData.category === "object" && rawData.category !== null
+          ? rawData.category.name
+          : typeof rawData.category === "string"
+            ? rawData.category
+            : "Specialty Ritual";
 
       return {
-        id: apiSvc.id,
-        name: apiSvc.name || localMeta?.name || "Bespoke Treatment",
-        category: localMeta?.category || "Specialty Ritual",
+        id: rawData.id,
+        name: rawData.name || "Bespoke Treatment",
+        category: catName,
         description:
-          apiSvc.description ||
-          localMeta?.description ||
-          "An exclusive luxury therapy.",
+          rawData.description || "An exclusive luxury therapy.",
         longDescription:
-          localMeta?.longDescription ||
-          apiSvc.description ||
+          rawData.description ||
           "Indulge in a premium, beautifully tailored therapeutic sanctuary experience designed to align your physical and mental wellbeing.",
         price,
         duration,
-        priceOptions:
-          localMeta?.priceOptions ||
-          (localMeta ? undefined : [{ duration, price }]),
+        priceOptions: [{ duration, price }],
         image:
-          localMeta?.image ||
+          rawData.image ||
           "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=1000",
-        benefits: localMeta?.benefits || [
+        benefits: [
           "Restores metabolic and energy balance",
           "Relieves localized muscle and tissue soreness",
           "Promotes absolute mindfulness and physical calm",
         ],
-        steps: localMeta?.steps || [
+        steps: [
           "Sensory and dietary profiling",
           "Targeted luxury body massage flow",
           "Closing hot herbal compress",
@@ -89,12 +87,8 @@ export default function ServiceDetailPage() {
       } as ServiceDetail;
     }
 
-    if (serviceError || (!serviceLoading && !apiSvc)) {
-      return getServiceById(id) || null;
-    }
-
     return null;
-  }, [apiSvc, serviceError, serviceLoading, id]);
+  }, [apiSvc]);
 
   const loading = serviceLoading && !apiSvc && !serviceError;
 
@@ -103,20 +97,16 @@ export default function ServiceDetailPage() {
       <div className="min-h-screen bg-brand-cream text-brand-charcoal font-sans">
         <Navbar navLinks={serviceDetailNavLinks} activeHref="/services" />
 
-        {/* Breadcrumbs Skeleton */}
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
           <Skeleton className="h-4 w-64" />
         </nav>
 
-        {/* Main Content Skeleton */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 lg:py-20">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 sm:gap-14 lg:gap-20 items-start">
-            {/* Image Skeleton */}
             <div className="lg:col-span-6 lg:sticky lg:top-24">
               <Skeleton className="aspect-[4/5] sm:aspect-square w-full rounded-2xl sm:rounded-3xl" />
             </div>
 
-            {/* Details Skeleton */}
             <div className="lg:col-span-6 space-y-7 sm:space-y-8">
               <div className="space-y-3 sm:space-y-3.5">
                 <Skeleton className="h-4 w-32" />
@@ -134,93 +124,32 @@ export default function ServiceDetailPage() {
                 <Skeleton className="h-16 w-full" />
               </div>
 
-              {/* Package Selector Skeleton */}
-              <div className="space-y-3 sm:space-y-3.5 pt-2">
-                <Skeleton className="h-4 w-40" />
-                <div className="grid grid-cols-2 gap-3">
-                  <Skeleton className="h-24 rounded-xl" />
-                  <Skeleton className="h-24 rounded-xl" />
-                </div>
-              </div>
-
-              {/* CTA Button Skeleton */}
               <Skeleton className="h-14 w-full rounded-full" />
-
-              {/* Quality Seal Skeleton */}
-              <div className="flex items-start gap-3 pt-4">
-                <Skeleton className="h-5 w-5 rounded-full" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-40" />
-                  <Skeleton className="h-4 w-64" />
-                </div>
-              </div>
             </div>
           </div>
         </main>
-
-        {/* Benefits & Steps Section Skeleton */}
-        <section className="relative bg-brand-card-cream/30 border-t border-brand-border/60 py-14 sm:py-20 lg:py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 sm:gap-16">
-              {/* Benefits Skeleton */}
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-8 w-48" />
-                </div>
-                <Skeleton className="h-px w-12" />
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <Skeleton className="h-5 w-5 rounded-full shrink-0" />
-                      <Skeleton className="h-4 flex-1" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Steps Skeleton */}
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-8 w-48" />
-                </div>
-                <Skeleton className="h-px w-12" />
-                <div className="space-y-5">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex gap-4">
-                      <Skeleton className="h-7 w-7 rounded-full shrink-0" />
-                      <Skeleton className="h-4 flex-1 mt-1" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <Footer />
       </div>
     );
   }
 
-  if (!service) {
+  if (serviceError || !service) {
     return (
-      <div className="min-h-screen bg-brand-cream text-brand-charcoal flex flex-col items-center justify-center font-sans px-6 text-center">
-        <Sparkles className="h-8 w-8 text-brand-primary/40 mb-5" />
-        <h2 className="font-serif text-3xl sm:text-4xl text-brand-charcoal mb-4 tracking-tight">
-          Treatment Not Found
-        </h2>
-        <p className="text-sm text-brand-charcoal/55 font-light mb-8 max-w-md leading-relaxed">
-          The requested luxury treatment does not exist in our catalog or might
-          be temporarily unavailable.
-        </p>
-        <Button
-          asChild
-          className="bg-brand-primary text-white hover:bg-brand-primary-hover px-8 py-5 text-xs uppercase tracking-widest rounded-full"
-        >
-          <Link href="/services">Back to Menu</Link>
-        </Button>
+      <div className="min-h-screen bg-brand-cream text-brand-charcoal font-sans">
+        <Navbar navLinks={serviceDetailNavLinks} activeHref="/services" />
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
+          <EmptyState
+            title="Treatment Not Found"
+            description="The requested luxury treatment is currently unavailable or doesn't exist in our catalog."
+            icon={Sparkles}
+            actionLabel="Back to Menu"
+            onAction={() => window.location.href = "/services"}
+          />
+        </main>
+
+        <Footer />
       </div>
     );
   }
@@ -235,7 +164,6 @@ export default function ServiceDetailPage() {
 
   return (
     <div className="relative min-h-screen bg-brand-cream text-brand-charcoal overflow-x-hidden font-sans selection:bg-brand-primary/20">
-      {/* AMBIENT BACKGROUND ACCENTS */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10">
         <div className="absolute -top-40 -right-40 w-md h-md rounded-full bg-brand-primary/6 blur-3xl"></div>
         <div className="absolute top-1/2 -left-40 w-md h-md rounded-full bg-brand-primary/4 blur-3xl"></div>
@@ -264,7 +192,6 @@ export default function ServiceDetailPage() {
       {/* DETAIL GRID */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 lg:py-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 sm:gap-14 lg:gap-20 items-start">
-          {/* LEFT: PREMIUM HERO IMAGE */}
           <div className="lg:col-span-6 lg:sticky lg:top-24">
             <div className="group relative aspect-[4/5] sm:aspect-square w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#f4efeb] border border-brand-border/60 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.15)]">
               <Image
@@ -288,7 +215,6 @@ export default function ServiceDetailPage() {
             </div>
           </div>
 
-          {/* RIGHT: DETAILS, DESCRIPTION, PACKAGES & CTAs */}
           <div className="lg:col-span-6 space-y-7 sm:space-y-8">
             <div className="space-y-3 sm:space-y-3.5">
               <span className="text-[10px] sm:text-xs tracking-[0.25em] text-brand-primary uppercase font-bold block">
@@ -324,7 +250,6 @@ export default function ServiceDetailPage() {
               <p>{service.longDescription}</p>
             </div>
 
-            {/* DURATION / PACKAGE SELECTORS */}
             {service.priceOptions && service.priceOptions.length > 1 && (
               <div className="space-y-3 sm:space-y-3.5 pt-2">
                 <span className="text-[10px] tracking-[0.15em] uppercase font-bold text-brand-charcoal/50 block">
@@ -353,7 +278,6 @@ export default function ServiceDetailPage() {
               </div>
             )}
 
-            {/* DIRECT BOOKING CTA */}
             <div className="pt-2 sm:pt-4">
               <Button
                 asChild
@@ -369,7 +293,6 @@ export default function ServiceDetailPage() {
               </Button>
             </div>
 
-            {/* QUALITY SEALS */}
             <div className="flex items-start sm:items-center gap-3 pt-4 border-t border-brand-border/60">
               <ShieldCheck className="h-5 w-5 text-brand-primary shrink-0 mt-0.5 sm:mt-0" />
               <div className="space-y-0.5">
@@ -389,7 +312,6 @@ export default function ServiceDetailPage() {
       <section className="relative bg-brand-card-cream/30 border-t border-brand-border/60 py-14 sm:py-20 lg:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 sm:gap-16">
-            {/* BENEFITS */}
             <div className="space-y-6">
               <div className="space-y-2">
                 <span className="text-[10px] tracking-[0.25em] text-brand-primary font-bold uppercase block">
@@ -410,7 +332,6 @@ export default function ServiceDetailPage() {
               </ul>
             </div>
 
-            {/* THE JOURNEY STEPS */}
             <div className="space-y-6">
               <div className="space-y-2">
                 <span className="text-[10px] tracking-[0.25em] text-brand-primary font-bold uppercase block">

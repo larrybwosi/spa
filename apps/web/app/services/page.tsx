@@ -3,22 +3,23 @@
 import React, { useMemo } from "react";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
-import { Button } from "@repo/ui/button";
+import { EmptyState } from "../../components/EmptyState";
 import { Skeleton } from "@repo/ui/skeleton";
 import useSWR from "swr";
 import { defaultFetcher } from "../swr-fetcher";
 import { API_ENDPOINTS } from "../../lib/api";
 import { ShieldCheck, Droplet, Coffee, Sparkles } from "lucide-react";
 import { ServiceCard } from "../../components/ServiceCard";
-import { getServiceById, ServiceDetail } from "./services-data";
+import { ServiceDetail } from "./services-data";
 
 interface ApiService {
   id: string;
   name?: string;
-  category?: { name: string };
+  category?: { name: string } | string;
   description?: string;
   duration?: number;
   price?: number;
+  image?: string;
 }
 
 const servicesNavLinks = [
@@ -40,17 +41,12 @@ const categoryCopy: Record<string, string> = {
 function ServiceCardSkeleton() {
   return (
     <div className="flex flex-col bg-[#F1ECE1] border border-[#1C1B18]/10 p-7 space-y-4">
-      {/* Image Skeleton */}
       <Skeleton className="aspect-[4/5] w-full rounded-none" />
       <div className="flex justify-between items-center pt-4">
-        {/* Category Skeleton */}
         <Skeleton className="h-4 w-1/4" />
-        {/* Duration Skeleton */}
         <Skeleton className="h-4 w-1/6" />
       </div>
-      {/* Name Skeleton */}
       <Skeleton className="h-7 w-3/4" />
-      {/* Description Skeleton */}
       <Skeleton className="h-12 w-full" />
       <div className="pt-5 border-t border-[#1C1B18]/10">
         <Skeleton className="h-4 w-24" />
@@ -66,56 +62,54 @@ export default function ServicesPage() {
   );
 
   const services = useMemo<ServiceDetail[]>(() => {
-    if (Array.isArray(apiServices?.data)) {
-      return apiServices?.data.map((apiSvc: ApiService) => {
-        const localMeta = getServiceById(apiSvc.id);
-        const price =
-          typeof apiSvc.price === "number"
-            ? apiSvc.price
-            : localMeta?.price || 120;
-        const duration =
-          typeof apiSvc.duration === "number"
-            ? apiSvc.duration
-            : localMeta?.duration || 60;
+    const servicesArray = Array.isArray(apiServices?.data)
+      ? apiServices.data
+      : Array.isArray(apiServices)
+        ? apiServices
+        : [];
 
-        return {
-          id: apiSvc.id,
-          name: apiSvc.name || localMeta?.name || "Bespoke Treatment",
-          category: apiSvc?.category?.name || "Holistic Wellness",
-          description:
-            apiSvc.description ||
-            localMeta?.description ||
-            "An exclusive luxury therapy.",
-          longDescription:
-            localMeta?.longDescription ||
-            apiSvc.description ||
-            "Indulge in a premium, beautifully tailored therapeutic sanctuary experience designed to align your physical and mental wellbeing.",
-          price,
-          duration,
-          priceOptions:
-            localMeta?.priceOptions ||
-            (localMeta ? undefined : [{ duration, price }]),
-          image:
-            localMeta?.image ||
-            "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=1000",
-          benefits: localMeta?.benefits || [
-            "Restores metabolic and energy balance",
-            "Relieves localized muscle and tissue soreness",
-            "Promotes absolute mindfulness and physical calm",
-          ],
-          steps: localMeta?.steps || [
-            "Sensory and dietary profiling",
-            "Targeted luxury body massage flow",
-            "Closing hot herbal compress",
-          ],
-        } as ServiceDetail;
-      });
-    }
-    return [];
+    return servicesArray.map((apiSvc: ApiService) => {
+      const catName =
+        typeof apiSvc.category === "object" && apiSvc.category !== null
+          ? apiSvc.category.name
+          : typeof apiSvc.category === "string"
+            ? apiSvc.category
+            : "Holistic Wellness";
+
+      const price = typeof apiSvc.price === "number" ? apiSvc.price : 120;
+      const duration = typeof apiSvc.duration === "number" ? apiSvc.duration : 60;
+
+      return {
+        id: apiSvc.id,
+        name: apiSvc.name || "Bespoke Treatment",
+        category: catName,
+        description:
+          apiSvc.description || "An exclusive luxury therapy.",
+        longDescription:
+          apiSvc.description ||
+          "Indulge in a premium, beautifully tailored therapeutic sanctuary experience designed to align your physical and mental wellbeing.",
+        price,
+        duration,
+        priceOptions: [{ duration, price }],
+        image:
+          apiSvc.image ||
+          "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=1000",
+        benefits: [
+          "Restores metabolic and energy balance",
+          "Relieves localized muscle and tissue soreness",
+          "Promotes absolute mindfulness and physical calm",
+        ],
+        steps: [
+          "Sensory and dietary profiling",
+          "Targeted luxury body massage flow",
+          "Closing hot herbal compress",
+        ],
+      } as ServiceDetail;
+    });
   }, [apiServices]);
 
   const categories = useMemo(() => {
-    const list = new Set(["Massage Therapy", "Skin Care", "Holistic Wellness"]);
+    const list = new Set<string>();
     services.forEach((s: ServiceDetail) => {
       if (s.category) {
         list.add(s.category);
@@ -192,7 +186,7 @@ export default function ServicesPage() {
     );
   }
 
-  if (error) {
+  if (error || services.length === 0) {
     return (
       <div className="relative min-h-screen bg-[#F1ECE1] text-[#1C1B18] overflow-x-hidden font-sans selection:bg-[#A9784F]/25">
         {fontStyles}
@@ -214,23 +208,19 @@ export default function ServicesPage() {
           </div>
         </section>
 
-        {/* ERROR STATE */}
-        <main className="py-24 sm:py-32 max-w-xl mx-auto px-4 text-center space-y-6">
-          <div className="inline-flex w-16 h-16 bg-[#A9784F]/10 text-[#A9784F] rounded-full items-center justify-center">
-            <Sparkles className="h-6 w-6" />
-          </div>
-          <h2 className="font-display text-3xl sm:text-4xl text-[#1C1B18]">
-            Rituals Unavailable
-          </h2>
-          <p className="text-sm text-[#1C1B18]/65 font-body font-light leading-relaxed">
-            We are currently unable to load the treatment menu. Please check your network connection or try again later.
-          </p>
-          <Button
-            onClick={() => window.location.reload()}
-            className="text-xs font-label uppercase tracking-widest bg-[#1C1B18] text-[#F1ECE1] px-8 py-5 rounded-none hover:bg-[#1C1B18]/85 font-semibold"
-          >
-            Retry Connection
-          </Button>
+        {/* EMPTY / ERROR STATE */}
+        <main className="py-24 sm:py-32 max-w-xl mx-auto px-4">
+          <EmptyState
+            title={error ? "Rituals Unavailable" : "No Rituals Found"}
+            description={
+              error
+                ? "We are currently unable to load the treatment menu. Please check your network connection or try again later."
+                : "There are currently no treatment services listed in our sanctuary menu."
+            }
+            icon={Sparkles}
+            actionLabel="Retry Connection"
+            onAction={() => window.location.reload()}
+          />
         </main>
 
         <Footer />
