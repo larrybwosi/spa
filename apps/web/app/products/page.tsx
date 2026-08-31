@@ -123,7 +123,7 @@ export default function ProductsPage() {
 
   const categories = useMemo(() => {
     const set = new Set<string>(["All"]);
-    products.forEach((p) => {
+    products.forEach((p: Product) => {
       if (p.category) set.add(p.category);
     });
     return Array.from(set);
