@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Star, ChevronRight } from "lucide-react";
 import { Product } from "../app/products/product-data";
 
@@ -17,13 +18,14 @@ export function ProductCard({ product }: ProductCardProps) {
         href={`/products/${product.slug}`}
         className="relative aspect-square w-full bg-[#DCD3C2]/20 overflow-hidden block"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={product.image}
           alt={product.name}
-          className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
         />
-        <div className="absolute top-4 left-4 bg-[#1C1B18]/90 backdrop-blur-xs px-3 py-1.5 text-[9px] font-label font-semibold uppercase tracking-widest text-[#F1ECE1]">
+        <div className="absolute top-4 left-4 z-10 bg-[#1C1B18]/90 backdrop-blur-xs px-3 py-1.5 text-[9px] font-label font-semibold uppercase tracking-widest text-[#F1ECE1]">
           {product.category}
         </div>
       </Link>

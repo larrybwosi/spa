@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@repo/ui/button";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
@@ -25,10 +26,6 @@ const homeNavLinks = [
   { label: "Location", href: "#location" },
 ];
 
-/* ---------------------------------------------------------
-   Reveal — scroll-triggered fade/lift wrapper using Framer Motion.
-   Replaces the previous hand-rolled intersection observer.
---------------------------------------------------------- */
 function Reveal({
   children,
   delay = 0,
@@ -59,9 +56,6 @@ function Reveal({
   );
 }
 
-/* ---------------------------------------------------------
-   CountUp — animates a numeric value in once visible using Framer Motion.
---------------------------------------------------------- */
 function CountUp({ value }: { value: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-10% 0px" });
@@ -105,10 +99,6 @@ function CountUp({ value }: { value: string }) {
   return <span ref={ref}>{display}</span>;
 }
 
-/* ---------------------------------------------------------
-   MagneticButton — CTA subtly tracks the cursor within
-   its bounds using smooth motion transitions.
---------------------------------------------------------- */
 function MagneticButton({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -140,21 +130,7 @@ function MagneticButton({ children }: { children: React.ReactNode }) {
 export default function Home() {
   return (
     <div className="relative min-h-screen bg-[#F1ECE1] text-[#1C1B18] overflow-x-hidden font-sans selection:bg-[#A9784F]/25">
-      {/* Fonts + signature animations */}
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600&display=swap");
-
-        .font-display {
-          font-family: "Fraunces", serif;
-          font-optical-sizing: auto;
-        }
-        .font-body {
-          font-family: "Inter", sans-serif;
-        }
-        .font-label {
-          font-family: "Space Grotesk", sans-serif;
-        }
-
         @keyframes breathe {
           0%,
           100% {
@@ -220,7 +196,6 @@ export default function Home() {
 
       {/* HERO */}
       <section className="relative min-h-[92vh] flex items-center justify-center pt-24 pb-28 px-4 sm:px-6 lg:px-8 overflow-hidden bg-[#1C1B18]">
-        {/* Breathing glow — signature element */}
         <div
           aria-hidden
           className="breathing-glow absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full pointer-events-none"
@@ -231,11 +206,13 @@ export default function Home() {
         />
 
         <div className="absolute inset-0 z-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src="https://cdn.sanity.io/images/ce88cj7n/production/bb6ab9270d7c090fced607191007b12fd711e96d-1456x816.png?f=webpq=80"
             alt="Still thermal pool at dusk"
-            className="w-full h-full object-cover object-center opacity-[0.38] mix-blend-luminosity scale-105"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center opacity-[0.38] mix-blend-luminosity scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-[#1C1B18]/40 via-[#1C1B18]/55 to-[#1C1B18]" />
         </div>
@@ -308,7 +285,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* TRUST STRIP — quiet authority signal between hero and menu */}
+      {/* TRUST STRIP */}
       <section className="bg-[#1C1B18] border-t border-[#DCD3C2]/10 py-6 overflow-hidden">
         <div className="relative flex whitespace-nowrap">
           <div className="marquee-track flex items-center gap-16 pr-16">
@@ -363,13 +340,14 @@ export default function Home() {
                   className="group flex flex-col bg-[#F1ECE1] hover:bg-white transition-colors duration-300 h-full"
                 >
                   <div className="relative aspect-[4/5] w-full overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={service.image}
                       alt={service.name}
-                      className="ken-burns absolute inset-0 w-full h-full object-cover object-center grayscale-[0.3] group-hover:grayscale-0"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="ken-burns object-cover object-center grayscale-[0.3] group-hover:grayscale-0"
                     />
-                    <span className="absolute top-5 left-5 font-display italic text-3xl text-white drop-shadow-md">
+                    <span className="absolute top-5 left-5 z-10 font-display italic text-3xl text-white drop-shadow-md">
                       0{idx + 1}
                     </span>
                   </div>
@@ -427,13 +405,14 @@ export default function Home() {
       >
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
           <Reveal className="lg:col-span-5 relative aspect-[3/4] overflow-hidden h-[480px] sm:h-[600px] w-full order-2 lg:order-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1000"
               alt="Sanctuary reception, warm low light"
-              className="absolute inset-0 w-full h-full object-cover object-center"
+              fill
+              sizes="(max-width: 1024px) 100vw, 42vw"
+              className="object-cover object-center"
             />
-            <div className="absolute inset-0 border border-[#DCD3C2]/10" />
+            <div className="absolute inset-0 border border-[#DCD3C2]/10 pointer-events-none z-10" />
           </Reveal>
 
           <div className="lg:col-span-7 flex flex-col justify-center space-y-10 order-1 lg:order-2">
@@ -517,13 +496,14 @@ export default function Home() {
                   href={`/products/${product.slug}`}
                   className="relative aspect-square w-full bg-[#DCD3C2]/20 overflow-hidden block"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={product.image}
                     alt={product.name}
-                    className="ken-burns h-full w-full object-cover object-center"
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="ken-burns object-cover object-center"
                   />
-                  <div className="absolute top-4 left-4 bg-[#1C1B18]/90 backdrop-blur-xs px-3 py-1.5 text-[9px] font-label font-semibold uppercase tracking-widest text-[#F1ECE1]">
+                  <div className="absolute top-4 left-4 z-10 bg-[#1C1B18]/90 backdrop-blur-xs px-3 py-1.5 text-[9px] font-label font-semibold uppercase tracking-widest text-[#F1ECE1]">
                     {product.category}
                   </div>
                 </Link>
@@ -710,11 +690,12 @@ export default function Home() {
             delay={100}
             className="lg:col-span-7 relative aspect-[4/3] overflow-hidden h-[320px] sm:h-[480px] w-full order-1 lg:order-2"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src="https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&q=80&w=1000"
               alt="Sanctuary treatment room detail"
-              className="absolute inset-0 w-full h-full object-cover object-center"
+              fill
+              sizes="(max-width: 1024px) 100vw, 58vw"
+              className="object-cover object-center"
             />
           </Reveal>
         </div>
