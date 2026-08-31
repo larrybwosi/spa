@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo } from "react";
 import { Input } from "@repo/ui/input";
-import { Button } from "@repo/ui/button";
 import { Skeleton } from "@repo/ui/skeleton";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
