@@ -11,7 +11,7 @@
   --color-brand-charcoal: #232220;
   --color-brand-border: #e8e3da;
 
-  --font-serif: var(--font-playfair), "Playfair Display", "Didot", "Georgia", serif;
+  --font-serif: var(--font-playfair), "Fraunces", "Playfair Display", "Didot", "Georgia", serif;
   --font-sans: var(--font-inter), "Inter", sans-serif;
 
   /* Slightly reduced border-radii for cleaner UI/UX */
@@ -57,6 +57,17 @@
       transform: scale(1);
     }
   }
+}
+
+.font-display {
+  font-family: var(--font-fraunces), var(--font-playfair), serif;
+  font-optical-sizing: auto;
+}
+.font-body {
+  font-family: var(--font-inter), sans-serif;
+}
+.font-label {
+  font-family: var(--font-space-grotesk), sans-serif;
 }
 
 /* Custom Base Styles */

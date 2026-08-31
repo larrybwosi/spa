@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { Button } from "@repo/ui/button";
 import { Skeleton } from "@repo/ui/skeleton";
@@ -78,7 +79,6 @@ const productDetailNavLinks = [
   { label: "Booking", href: "/booking" },
 ];
 
-// Mock reviews for demonstration - this would come from your API
 const MOCK_REVIEWS: Review[] = [
   {
     id: "1",
@@ -161,47 +161,27 @@ export default function ProductDetailPage() {
       productId,
     });
     console.log(res);
+    setAddedToCartToast(true);
   };
 
   const toggleSection = (section: string) => {
     setOpenSection((prev) => (prev === section ? null : section));
   };
 
-  const fontStyles = (
-    <style jsx global>{`
-      @import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600&display=swap");
-
-      .font-display {
-        font-family: "Fraunces", serif;
-        font-optical-sizing: auto;
-      }
-      .font-body {
-        font-family: "Inter", sans-serif;
-      }
-      .font-label {
-        font-family: "Space Grotesk", sans-serif;
-      }
-    `}</style>
-  );
-
   if (productsLoading) {
     return (
       <div className="relative min-h-screen bg-[#F1ECE1] text-[#1C1B18] overflow-x-hidden font-sans selection:bg-[#A9784F]/25">
-        {fontStyles}
         <Navbar navLinks={productDetailNavLinks} activeHref="/products" />
-        {/* Breadcrumbs Skeleton */}
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
           <Skeleton className="h-4 w-64 rounded-none" />
         </nav>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-start">
-            {/* Image Skeleton */}
             <div className="lg:col-span-6 relative aspect-square w-full">
               <Skeleton className="w-full h-full rounded-none" />
             </div>
 
-            {/* Details Skeleton */}
             <div className="lg:col-span-6 space-y-8">
               <div className="space-y-3.5">
                 <Skeleton className="h-4 w-32 rounded-none" />
@@ -237,7 +217,6 @@ export default function ProductDetailPage() {
   if (productsError || !product) {
     return (
       <div className="relative min-h-screen bg-[#F1ECE1] text-[#1C1B18] overflow-x-hidden font-sans selection:bg-[#A9784F]/25">
-        {fontStyles}
         <Navbar navLinks={productDetailNavLinks} activeHref="/products" />
         <main className="py-24 sm:py-32 max-w-xl mx-auto px-4 text-center space-y-6">
           <div className="inline-flex w-16 h-16 bg-[#A9784F]/10 text-[#A9784F] rounded-full items-center justify-center font-semibold">
@@ -263,8 +242,6 @@ export default function ProductDetailPage() {
 
   return (
     <div className="relative min-h-screen bg-[#F1ECE1] text-[#1C1B18] overflow-x-hidden font-sans selection:bg-[#A9784F]/25">
-      {fontStyles}
-
       <Navbar navLinks={productDetailNavLinks} activeHref="/products" />
 
       {/* BREADCRUMBS */}
@@ -290,13 +267,15 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-start">
           {/* Image */}
           <div className="lg:col-span-6 relative aspect-square w-full overflow-hidden bg-[#DCD3C2]/20 border border-[#1C1B18]/10">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={product.image}
               alt={product.name}
-              className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-700"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover object-center hover:scale-105 transition-transform duration-700"
             />
-            <div className="absolute top-4 left-4 bg-[#1C1B18]/90 backdrop-blur-xs px-3.5 py-1.5 text-[10px] font-label font-semibold uppercase tracking-widest text-[#F1ECE1]">
+            <div className="absolute top-4 left-4 z-10 bg-[#1C1B18]/90 backdrop-blur-xs px-3.5 py-1.5 text-[10px] font-label font-semibold uppercase tracking-widest text-[#F1ECE1]">
               {product.category}
             </div>
           </div>
@@ -515,7 +494,6 @@ export default function ProductDetailPage() {
                 ))}
               </div>
             ) : (
-              /* Empty State for Reviews */
               <div className="bg-[#F1ECE1]/5 border border-[#F1ECE1]/10 p-12 text-center">
                 <div className="inline-flex w-16 h-16 bg-[#A9784F]/10 text-[#A9784F] rounded-full items-center justify-center mb-4">
                   <MessageCircle className="h-6 w-6" />

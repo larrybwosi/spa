@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronRight, Clock } from "lucide-react";
 import { ServiceDetail } from "../app/services/services-data";
 
@@ -17,14 +18,15 @@ export function ServiceCard({ service, index }: ServiceCardProps) {
       className="group flex flex-col bg-[#F1ECE1] hover:bg-white transition-colors duration-300"
     >
       <div className="relative aspect-[4/5] w-full overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={service.image}
           alt={service.name}
-          className="absolute inset-0 w-full h-full object-cover object-center grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105"
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 33vw"
+          className="object-cover object-center grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105"
         />
         {typeof index === "number" && (
-          <span className="absolute top-5 left-5 font-display italic text-3xl text-white drop-shadow-md">
+          <span className="absolute top-5 left-5 z-10 font-display italic text-3xl text-white drop-shadow-md">
             {String(index + 1).padStart(2, "0")}
           </span>
         )}

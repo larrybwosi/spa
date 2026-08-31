@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { Button } from "@repo/ui/button";
 import { Skeleton } from "@repo/ui/skeleton";
@@ -266,19 +267,21 @@ export default function ServiceDetailPage() {
           {/* LEFT: PREMIUM HERO IMAGE */}
           <div className="lg:col-span-6 lg:sticky lg:top-24">
             <div className="group relative aspect-[4/5] sm:aspect-square w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#f4efeb] border border-brand-border/60 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.15)]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={service.image}
                 alt={service.name}
-                className="w-full h-full object-cover object-center transition-transform duration-[1200ms] ease-out group-hover:scale-110"
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover object-center transition-transform duration-[1200ms] ease-out group-hover:scale-110"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none z-10"></div>
 
-              <div className="absolute top-4 left-4 sm:top-5 sm:left-5 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest text-brand-primary shadow-sm border border-white/60">
+              <div className="absolute top-4 left-4 sm:top-5 sm:left-5 z-20 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest text-brand-primary shadow-sm border border-white/60">
                 {service.category}
               </div>
 
-              <div className="absolute bottom-4 right-4 sm:bottom-5 sm:right-5 flex items-center gap-1.5 bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-wider text-white">
+              <div className="absolute bottom-4 right-4 sm:bottom-5 sm:right-5 z-20 flex items-center gap-1.5 bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-wider text-white">
                 <Sparkles className="h-3 w-3" />
                 Signature
               </div>

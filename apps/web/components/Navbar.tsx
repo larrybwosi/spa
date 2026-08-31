@@ -44,8 +44,6 @@ export function Navbar({ navLinks = [], activeHref }: NavbarProps) {
   return (
     <>
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600&display=swap");
-
         .font-display {
           font-family: "Fraunces", serif;
           font-optical-sizing: auto;
