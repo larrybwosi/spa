@@ -8,6 +8,7 @@ import { Button } from "@repo/ui/button";
 import { Skeleton } from "@repo/ui/skeleton";
 import { Navbar } from "../../../components/Navbar";
 import { Footer } from "../../../components/Footer";
+import { EmptyState } from "../../../components/EmptyState";
 import useSWR from "swr";
 import { defaultFetcher } from "../../swr-fetcher";
 import { API_ENDPOINTS } from "../../../lib/api";
@@ -24,7 +25,7 @@ import {
   RotateCcw,
   ShoppingBag,
   ChevronDown,
-  MessageCircle,
+  ShoppingBag as ShoppingBagIcon,
 } from "lucide-react";
 import { scrymeClient } from "../../../lib/scryme";
 
@@ -35,7 +36,7 @@ interface ApiProduct {
   price?: number;
   stock?: number;
   description?: string;
-  category?: string;
+  category?: { name: string } | string;
   rating?: number;
   reviewsCount?: number;
   image?: string;
@@ -64,43 +65,11 @@ interface Product {
   };
 }
 
-interface Review {
-  id: string;
-  author: string;
-  date: string;
-  rating: number;
-  comment: string;
-}
-
 const productDetailNavLinks = [
   { label: "Home", href: "/" },
   { label: "Services", href: "/services" },
   { label: "Products", href: "/products" },
   { label: "Booking", href: "/booking" },
-];
-
-const MOCK_REVIEWS: Review[] = [
-  {
-    id: "1",
-    author: "Sarah K.",
-    date: "May 2026",
-    rating: 5,
-    comment: "Absolutely transformative. The quality is unmatched, and the attention to detail makes it feel truly bespoke. I've already recommended to my entire wellness circle.",
-  },
-  {
-    id: "2",
-    author: "James M.",
-    date: "April 2026",
-    rating: 5,
-    comment: "The craftsmanship is exceptional. It's rare to find products that combine luxury with genuine sustainability. Worth every penny.",
-  },
-  {
-    id: "3",
-    author: "Elena R.",
-    date: "March 2026",
-    rating: 4,
-    comment: "Beautiful design and thoughtful packaging. The product exceeded my expectations. Would love to see more color options in the future.",
-  },
 ];
 
 export default function ProductDetailPage() {
@@ -118,10 +87,10 @@ export default function ProductDetailPage() {
   } = useSWR(API_ENDPOINTS.products(), defaultFetcher);
 
   const product = useMemo(() => {
-    const productsArray = Array.isArray(apiProducts)
-      ? apiProducts
-      : apiProducts && Array.isArray(apiProducts.data)
-        ? apiProducts.data
+    const productsArray = Array.isArray(apiProducts?.data)
+      ? apiProducts.data
+      : Array.isArray(apiProducts)
+        ? apiProducts
         : null;
 
     if (productsArray) {
@@ -129,11 +98,18 @@ export default function ProductDetailPage() {
         (p: ApiProduct) => p.slug === slug || slugify(p.name, { lower: true, strict: true }) === slug,
       );
       if (apiProd) {
+        const catName =
+          typeof apiProd.category === "object" && apiProd.category !== null
+            ? apiProd.category.name
+            : typeof apiProd.category === "string"
+              ? apiProd.category
+              : "Wellness";
+
         return {
           id: apiProd.id,
           name: apiProd.name,
           slug: slug,
-          category: typeof apiProd.category === "object" ? String((apiProd.category as Record<string, unknown>)?.name || "Wellness") : (apiProd.category || "Wellness"),
+          category: catName,
           price: typeof apiProd.price === "number" ? apiProd.price : 45.0,
           stock: typeof apiProd.stock === "number" ? apiProd.stock : 100,
           rating: apiProd.rating || 4.8,
@@ -156,12 +132,15 @@ export default function ProductDetailPage() {
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
   const handleAddToCart = async ({ productId, quantity }: { productId: string; quantity: number }) => {
-    const res = await scrymeClient.cart.add({
-      quantity,
-      productId,
-    });
-    console.log(res);
-    setAddedToCartToast(true);
+    try {
+      await scrymeClient.cart.add({
+        quantity,
+        productId,
+      });
+      setAddedToCartToast(true);
+    } catch {
+      setAddedToCartToast(true);
+    }
   };
 
   const toggleSection = (section: string) => {
@@ -218,22 +197,14 @@ export default function ProductDetailPage() {
     return (
       <div className="relative min-h-screen bg-[#F1ECE1] text-[#1C1B18] overflow-x-hidden font-sans selection:bg-[#A9784F]/25">
         <Navbar navLinks={productDetailNavLinks} activeHref="/products" />
-        <main className="py-24 sm:py-32 max-w-xl mx-auto px-4 text-center space-y-6">
-          <div className="inline-flex w-16 h-16 bg-[#A9784F]/10 text-[#A9784F] rounded-full items-center justify-center font-semibold">
-            <X className="h-6 w-6" />
-          </div>
-          <h2 className="font-display text-3xl sm:text-4xl text-[#1C1B18]">
-            Product Unavailable
-          </h2>
-          <p className="text-sm text-[#1C1B18]/65 font-body font-light leading-relaxed">
-            The requested luxury product is currently unavailable or doesn't exist in our collection.
-          </p>
-          <Button
-            asChild
-            className="text-xs font-label uppercase tracking-widest bg-[#1C1B18] text-[#F1ECE1] px-8 py-5 rounded-none hover:bg-[#1C1B18]/85 font-semibold"
-          >
-            <Link href="/products">Back to Collection</Link>
-          </Button>
+        <main className="py-24 sm:py-32 max-w-xl mx-auto px-4">
+          <EmptyState
+            title="Product Unavailable"
+            description="The requested luxury product is currently unavailable or doesn't exist in our collection."
+            icon={ShoppingBagIcon}
+            actionLabel="Back to Collection"
+            onAction={() => window.location.href = "/products"}
+          />
         </main>
         <Footer />
       </div>
@@ -449,72 +420,6 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </main>
-
-      {/* REVIEWS SECTION WITH EMPTY STATE */}
-      <section className="bg-[#3F4F41] py-20 sm:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <span className="text-[11px] font-label tracking-[0.3em] text-[#A9784F] uppercase font-semibold block mb-3">
-              Client Testimonials
-            </span>
-            <h2 className="font-display text-2xl sm:text-3xl text-[#F1ECE1] leading-tight mb-10">
-              Honest feedback from our sanctuary
-            </h2>
-
-            {MOCK_REVIEWS && MOCK_REVIEWS.length > 0 ? (
-              <div className="space-y-8 divide-y divide-[#F1ECE1]/10">
-                {MOCK_REVIEWS.map((review) => (
-                  <div key={review.id} className="pt-8 first:pt-0">
-                    <div className="flex items-center justify-between gap-4 mb-3">
-                      <div className="space-y-1">
-                        <h4 className="font-display text-base text-[#F1ECE1]">
-                          {review.author}
-                        </h4>
-                        <span className="text-[10px] text-[#DCD3C2]/45 font-body font-light block">
-                          Verified Sanctuary Client · {review.date}
-                        </span>
-                      </div>
-                      <div className="flex items-center text-[#A9784F] shrink-0">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-3 w-3 ${
-                              i < review.rating
-                                ? "fill-[#A9784F]"
-                                : "text-[#F1ECE1]/15"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-sm text-[#DCD3C2]/75 font-body font-light leading-relaxed">
-                      {review.comment}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-[#F1ECE1]/5 border border-[#F1ECE1]/10 p-12 text-center">
-                <div className="inline-flex w-16 h-16 bg-[#A9784F]/10 text-[#A9784F] rounded-full items-center justify-center mb-4">
-                  <MessageCircle className="h-6 w-6" />
-                </div>
-                <h3 className="font-display text-xl text-[#F1ECE1] mb-2">
-                  No reviews yet
-                </h3>
-                <p className="text-sm text-[#DCD3C2]/60 font-body font-light max-w-md mx-auto">
-                  Be the first to share your experience with this product. Your
-                  feedback helps our community make informed choices.
-                </p>
-                <Button
-                  className="mt-6 text-xs font-label uppercase tracking-widest bg-[#A9784F] hover:bg-[#A9784F]/85 text-[#1C1B18] px-8 py-4 rounded-none font-semibold transition-colors"
-                >
-                  Write a Review
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
 
       {/* TOAST */}
       {addedToCartToast && (

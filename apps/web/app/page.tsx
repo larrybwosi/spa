@@ -1,12 +1,18 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@repo/ui/button";
+import { Skeleton } from "@repo/ui/skeleton";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
+import { EmptyState } from "../components/EmptyState";
 import { motion, useInView } from "framer-motion";
+import useSWR from "swr";
+import { defaultFetcher } from "./swr-fetcher";
+import { API_ENDPOINTS } from "../lib/api";
+import slugify from "slugify";
 import {
   MapPin,
   ArrowRight,
@@ -14,9 +20,53 @@ import {
   ChevronRight,
   Clock,
   Star,
+  Sparkles,
+  ShoppingBag,
 } from "lucide-react";
-import { FALLBACK_SERVICES } from "./services/services-data";
-import { FALLBACK_PRODUCTS, Product } from "./products/product-data";
+
+interface ApiService {
+  id: string;
+  name?: string;
+  category?: { name: string } | string;
+  description?: string;
+  duration?: number;
+  price?: number;
+  image?: string;
+}
+
+interface ServiceItem {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  duration: number;
+  price: number;
+  image: string;
+}
+
+interface ApiProduct {
+  id: string;
+  name: string;
+  slug?: string;
+  price?: number;
+  category?: { name: string } | string;
+  rating?: number;
+  reviewsCount?: number;
+  image?: string;
+  description?: string;
+}
+
+interface ProductItem {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  price: number;
+  rating: number;
+  reviewsCount: number;
+  image: string;
+  description: string;
+}
 
 const homeNavLinks = [
   { label: "About", href: "#about" },
@@ -128,6 +178,80 @@ function MagneticButton({ children }: { children: React.ReactNode }) {
 }
 
 export default function Home() {
+  const {
+    data: apiServicesData,
+    error: servicesError,
+    isLoading: servicesLoading,
+  } = useSWR(API_ENDPOINTS.services(), defaultFetcher);
+
+  const {
+    data: apiProductsData,
+    error: productsError,
+    isLoading: productsLoading,
+  } = useSWR(API_ENDPOINTS.products(), defaultFetcher);
+
+  const services = useMemo<ServiceItem[]>(() => {
+    const servicesArray = Array.isArray(apiServicesData?.data)
+      ? apiServicesData.data
+      : Array.isArray(apiServicesData)
+        ? apiServicesData
+        : [];
+
+    return servicesArray.map((svc: ApiService) => {
+      const catName =
+        typeof svc.category === "object" && svc.category !== null
+          ? svc.category.name
+          : typeof svc.category === "string"
+            ? svc.category
+            : "Holistic Wellness";
+
+      return {
+        id: svc.id,
+        name: svc.name || "Bespoke Treatment",
+        category: catName,
+        description: svc.description || "An exclusive luxury therapy.",
+        duration: typeof svc.duration === "number" ? svc.duration : 60,
+        price: typeof svc.price === "number" ? svc.price : 120,
+        image:
+          svc.image ||
+          "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=1000",
+      };
+    });
+  }, [apiServicesData]);
+
+  const products = useMemo<ProductItem[]>(() => {
+    const productsArray = Array.isArray(apiProductsData?.data)
+      ? apiProductsData.data
+      : Array.isArray(apiProductsData)
+        ? apiProductsData
+        : [];
+
+    return productsArray.map((prod: ApiProduct) => {
+      const catName =
+        typeof prod.category === "object" && prod.category !== null
+          ? prod.category.name
+          : typeof prod.category === "string"
+            ? prod.category
+            : "Wellness";
+
+      return {
+        id: prod.id,
+        name: prod.name,
+        slug:
+          prod.slug ||
+          slugify(prod.name || "product", { lower: true, strict: true }),
+        category: catName,
+        price: typeof prod.price === "number" ? prod.price : 45.0,
+        rating: prod.rating || 4.8,
+        reviewsCount: prod.reviewsCount || 12,
+        image:
+          prod.image ||
+          "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000",
+        description: prod.description || "Bespoke Aura Luxury product.",
+      };
+    });
+  }, [apiProductsData]);
+
   return (
     <div className="relative min-h-screen bg-[#F1ECE1] text-[#1C1B18] overflow-x-hidden font-sans selection:bg-[#A9784F]/25">
       <style jsx global>{`
@@ -321,7 +445,7 @@ export default function Home() {
                 The Menu
               </span>
               <h2 className="font-display text-4xl sm:text-5xl text-[#1C1B18] leading-tight">
-                Three rituals,
+                Featured rituals,
                 <br />
                 <span className="italic text-[#3F4F41]">chosen for you</span>
               </h2>
@@ -332,69 +456,92 @@ export default function Home() {
             </p>
           </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#1C1B18]/10">
-            {FALLBACK_SERVICES.slice(0, 3).map((service, idx) => (
-              <Reveal key={service.id} delay={idx * 120}>
-                <Link
-                  href={`/services/${service.id}`}
-                  className="group flex flex-col bg-[#F1ECE1] hover:bg-white transition-colors duration-300 h-full"
-                >
-                  <div className="relative aspect-[4/5] w-full overflow-hidden">
-                    <Image
-                      src={service.image}
-                      alt={service.name}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      className="ken-burns object-cover object-center grayscale-[0.3] group-hover:grayscale-0"
-                    />
-                    <span className="absolute top-5 left-5 z-10 font-display italic text-3xl text-white drop-shadow-md">
-                      0{idx + 1}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col flex-1 p-7 space-y-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-label tracking-[0.2em] uppercase font-semibold text-[#3F4F41]">
-                        {service.category}
-                      </span>
-                      <span className="text-xs font-body text-[#1C1B18]/45 flex items-center gap-1.5 font-body">
-                        <Clock className="h-3 w-3" />
-                        {service.duration} min
+          {servicesLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, idx) => (
+                <div key={idx} className="flex flex-col bg-[#F1ECE1] border border-[#1C1B18]/10 p-7 space-y-4">
+                  <Skeleton className="aspect-[4/5] w-full rounded-none" />
+                  <Skeleton className="h-4 w-1/4" />
+                  <Skeleton className="h-7 w-3/4" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ))}
+            </div>
+          ) : servicesError || services.length === 0 ? (
+            <EmptyState
+              title="No Rituals Available"
+              description="Our treatment menu is currently unavailable. Please refresh or check back shortly."
+              icon={Sparkles}
+              actionLabel="Retry Connection"
+              onAction={() => window.location.reload()}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#1C1B18]/10">
+              {services.slice(0, 3).map((service, idx) => (
+                <Reveal key={service.id} delay={idx * 120}>
+                  <Link
+                    href={`/services/${service.id}`}
+                    className="group flex flex-col bg-[#F1ECE1] hover:bg-white transition-colors duration-300 h-full"
+                  >
+                    <div className="relative aspect-[4/5] w-full overflow-hidden">
+                      <Image
+                        src={service.image}
+                        alt={service.name}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="ken-burns object-cover object-center grayscale-[0.3] group-hover:grayscale-0"
+                      />
+                      <span className="absolute top-5 left-5 z-10 font-display italic text-3xl text-white drop-shadow-md">
+                        0{idx + 1}
                       </span>
                     </div>
 
-                    <h3 className="font-display text-2xl text-[#1C1B18] leading-tight">
-                      {service.name}
-                    </h3>
+                    <div className="flex flex-col flex-1 p-7 space-y-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-label tracking-[0.2em] uppercase font-semibold text-[#3F4F41]">
+                          {service.category}
+                        </span>
+                        <span className="text-xs font-body text-[#1C1B18]/45 flex items-center gap-1.5 font-body">
+                          <Clock className="h-3 w-3" />
+                          {service.duration} min
+                        </span>
+                      </div>
 
-                    <p className="text-sm text-[#1C1B18]/60 font-body font-light leading-relaxed flex-1 line-clamp-2 font-body">
-                      {service.description}
-                    </p>
+                      <h3 className="font-display text-2xl text-[#1C1B18] leading-tight">
+                        {service.name}
+                      </h3>
 
-                    <div className="pt-5 border-t border-[#1C1B18]/10 flex items-center justify-between">
-                      <span className="font-display text-lg text-[#1C1B18]">
-                        Ksh {service.price}
-                      </span>
-                      <div className="flex items-center gap-1 text-[10px] font-label uppercase tracking-[0.15em] font-semibold text-[#A9784F]">
-                        <span>Details</span>
-                        <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                      <p className="text-sm text-[#1C1B18]/60 font-body font-light leading-relaxed flex-1 line-clamp-2 font-body">
+                        {service.description}
+                      </p>
+
+                      <div className="pt-5 border-t border-[#1C1B18]/10 flex items-center justify-between">
+                        <span className="font-display text-lg text-[#1C1B18]">
+                          Ksh {service.price}
+                        </span>
+                        <div className="flex items-center gap-1 text-[10px] font-label uppercase tracking-[0.15em] font-semibold text-[#A9784F]">
+                          <span>Details</span>
+                          <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              </Reveal>
-            ))}
-          </div>
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
+          )}
 
-          <Reveal delay={200} className="text-center mt-16">
-            <Button
-              asChild
-              variant="outline"
-              className="rounded-none h-12 px-10 uppercase tracking-[0.2em] font-label font-semibold text-xs border-[#1C1B18]/20 hover:bg-[#1C1B18] hover:text-[#F1ECE1] transition-all duration-300 animate-none"
-            >
-              <Link href="/services">View Full Menu</Link>
-            </Button>
-          </Reveal>
+          {services.length > 0 && (
+            <Reveal delay={200} className="text-center mt-16">
+              <Button
+                asChild
+                variant="outline"
+                className="rounded-none h-12 px-10 uppercase tracking-[0.2em] font-label font-semibold text-xs border-[#1C1B18]/20 hover:bg-[#1C1B18] hover:text-[#F1ECE1] transition-all duration-300 animate-none"
+              >
+                <Link href="/services">View Full Menu</Link>
+              </Button>
+            </Reveal>
+          )}
         </div>
       </section>
 
@@ -485,86 +632,109 @@ export default function Home() {
             </p>
           </Reveal>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {FALLBACK_PRODUCTS.slice(3, 6).map((product: Product, idx: number) => (
-              <Reveal
-                key={product.id}
-                delay={idx * 120}
-                className="group flex flex-col bg-white border border-[#1C1B18]/10 overflow-hidden hover:border-[#A9784F]/40 hover:shadow-[0_20px_40px_-20px_rgba(28,27,24,0.15)] transition-all duration-500 h-full"
-              >
-                <Link
-                  href={`/products/${product.slug}`}
-                  className="relative aspect-square w-full bg-[#DCD3C2]/20 overflow-hidden block"
+          {productsLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, idx) => (
+                <div key={idx} className="flex flex-col bg-white border border-[#1C1B18]/10 p-6 space-y-4">
+                  <Skeleton className="aspect-square w-full rounded-none" />
+                  <Skeleton className="h-4 w-1/4" />
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </div>
+          ) : productsError || products.length === 0 ? (
+            <EmptyState
+              title="No Products Available"
+              description="Our apothecary collection is currently unavailable. Please refresh or check back shortly."
+              icon={ShoppingBag}
+              actionLabel="Retry Connection"
+              onAction={() => window.location.reload()}
+            />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {products.slice(0, 3).map((product: ProductItem, idx: number) => (
+                <Reveal
+                  key={product.id}
+                  delay={idx * 120}
+                  className="group flex flex-col bg-white border border-[#1C1B18]/10 overflow-hidden hover:border-[#A9784F]/40 hover:shadow-[0_20px_40px_-20px_rgba(28,27,24,0.15)] transition-all duration-500 h-full"
                 >
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="ken-burns object-cover object-center"
-                  />
-                  <div className="absolute top-4 left-4 z-10 bg-[#1C1B18]/90 backdrop-blur-xs px-3 py-1.5 text-[9px] font-label font-semibold uppercase tracking-widest text-[#F1ECE1]">
-                    {product.category}
-                  </div>
-                </Link>
-
-                <div className="p-6 flex flex-col flex-1">
-                  <div className="flex items-center gap-1 mb-3">
-                    <div className="flex items-center text-[#A9784F]">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-3 w-3 ${
-                            i < Math.floor(product.rating)
-                              ? "fill-[#A9784F]"
-                              : "text-[#1C1B18]/15"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-[10px] font-body text-[#1C1B18]/45 font-medium font-body">
-                      ({product.reviewsCount})
-                    </span>
-                  </div>
-
                   <Link
                     href={`/products/${product.slug}`}
-                    className="block flex-1"
+                    className="relative aspect-square w-full bg-[#DCD3C2]/20 overflow-hidden block"
                   >
-                    <h3 className="font-display text-xl text-[#1C1B18] line-clamp-1 mb-2 group-hover:text-[#A9784F] transition-colors duration-300">
-                      {product.name}
-                    </h3>
-                    <p className="text-sm text-[#1C1B18]/55 font-body font-light line-clamp-2 leading-relaxed mb-5 font-body">
-                      {product.description}
-                    </p>
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="ken-burns object-cover object-center"
+                    />
+                    <div className="absolute top-4 left-4 z-10 bg-[#1C1B18]/90 backdrop-blur-xs px-3 py-1.5 text-[9px] font-label font-semibold uppercase tracking-widest text-[#F1ECE1]">
+                      {product.category}
+                    </div>
                   </Link>
 
-                  <div className="pt-5 border-t border-[#1C1B18]/10 flex items-center justify-between mt-auto">
-                    <span className="font-display text-lg text-[#1C1B18]">
-                      Ksh {product.price.toFixed(2)}
-                    </span>
+                  <div className="p-6 flex flex-col flex-1">
+                    <div className="flex items-center gap-1 mb-3">
+                      <div className="flex items-center text-[#A9784F]">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-3 w-3 ${
+                              i < Math.floor(product.rating)
+                                ? "fill-[#A9784F]"
+                                : "text-[#1C1B18]/15"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[10px] font-body text-[#1C1B18]/45 font-medium font-body">
+                        ({product.reviewsCount})
+                      </span>
+                    </div>
+
                     <Link
                       href={`/products/${product.slug}`}
-                      className="text-[10px] font-label uppercase tracking-widest text-[#A9784F] font-semibold hover:text-[#93673F] flex items-center gap-1 group/btn"
+                      className="block flex-1"
                     >
-                      <span>Details</span>
-                      <ChevronRight className="h-3.5 w-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                      <h3 className="font-display text-xl text-[#1C1B18] line-clamp-1 mb-2 group-hover:text-[#A9784F] transition-colors duration-300">
+                        {product.name}
+                      </h3>
+                      <p className="text-sm text-[#1C1B18]/55 font-body font-light line-clamp-2 leading-relaxed mb-5 font-body">
+                        {product.description}
+                      </p>
                     </Link>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
 
-          <Reveal delay={200} className="text-center mt-16">
-            <Button
-              asChild
-              variant="outline"
-              className="rounded-none h-12 px-10 uppercase tracking-[0.2em] font-label font-semibold text-xs border-[#1C1B18]/20 hover:bg-[#1C1B18] hover:text-[#F1ECE1] transition-all duration-300 animate-none"
-            >
-              <Link href="/products">Explore the Collection</Link>
-            </Button>
-          </Reveal>
+                    <div className="pt-5 border-t border-[#1C1B18]/10 flex items-center justify-between mt-auto">
+                      <span className="font-display text-lg text-[#1C1B18]">
+                        Ksh {product.price.toFixed(2)}
+                      </span>
+                      <Link
+                        href={`/products/${product.slug}`}
+                        className="text-[10px] font-label uppercase tracking-widest text-[#A9784F] font-semibold hover:text-[#93673F] flex items-center gap-1 group/btn"
+                      >
+                        <span>Details</span>
+                        <ChevronRight className="h-3.5 w-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                      </Link>
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          )}
+
+          {products.length > 0 && (
+            <Reveal delay={200} className="text-center mt-16">
+              <Button
+                asChild
+                variant="outline"
+                className="rounded-none h-12 px-10 uppercase tracking-[0.2em] font-label font-semibold text-xs border-[#1C1B18]/20 hover:bg-[#1C1B18] hover:text-[#F1ECE1] transition-all duration-300 animate-none"
+              >
+                <Link href="/products">Explore the Collection</Link>
+              </Button>
+            </Reveal>
+          )}
         </div>
       </section>
 

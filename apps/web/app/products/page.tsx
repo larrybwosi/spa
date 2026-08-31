@@ -6,10 +6,11 @@ import { Button } from "@repo/ui/button";
 import { Skeleton } from "@repo/ui/skeleton";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
+import { EmptyState } from "../../components/EmptyState";
 import useSWR from "swr";
 import { defaultFetcher } from "../swr-fetcher";
 import { API_ENDPOINTS } from "../../lib/api";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, ShoppingBag } from "lucide-react";
 import { ProductCard } from "../../components/ProductCard";
 import slugify from "slugify";
 
@@ -20,7 +21,7 @@ interface ApiProduct {
   price?: number;
   stock?: number;
   description?: string;
-  category?: string;
+  category?: { name: string } | string;
   rating?: number;
   reviewsCount?: number;
   image?: string;
@@ -59,20 +60,13 @@ const productsNavLinks = [
 function ProductCardSkeleton() {
   return (
     <div className="flex flex-col bg-white border border-[#1C1B18]/10 overflow-hidden p-6 space-y-4">
-      {/* Image Skeleton */}
       <Skeleton className="aspect-square w-full rounded-none" />
-      {/* Category Skeleton */}
       <Skeleton className="h-4 w-1/4" />
-      {/* Rating / Reviews Skeleton */}
       <Skeleton className="h-3 w-1/3" />
-      {/* Title Skeleton */}
       <Skeleton className="h-6 w-3/4" />
-      {/* Description Skeleton */}
       <Skeleton className="h-10 w-full" />
       <div className="pt-5 border-t border-[#1C1B18]/10 flex items-center justify-between mt-auto">
-        {/* Price Skeleton */}
         <Skeleton className="h-5 w-20" />
-        {/* Details button Skeleton */}
         <Skeleton className="h-4 w-12" />
       </div>
     </div>
@@ -89,36 +83,52 @@ export default function ProductsPage() {
     error,
     isLoading,
   } = useSWR(API_ENDPOINTS.products(), defaultFetcher);
-  console.log(apiProducts);
 
   const products = useMemo(() => {
-    const productsArray = Array.isArray(apiProducts)
-      ? apiProducts
-      : apiProducts && Array.isArray(apiProducts.data)
-        ? apiProducts.data
+    const productsArray = Array.isArray(apiProducts?.data)
+      ? apiProducts.data
+      : Array.isArray(apiProducts)
+        ? apiProducts
         : null;
 
     if (productsArray) {
-      return productsArray.map((apiProd: ApiProduct) => ({
-        id: apiProd.id,
-        name: apiProd.name,
-        slug: apiProd.slug || slugify(apiProd.name, { lower: true, strict: true }),
-        category: apiProd.category || "Wellness",
-        price: typeof apiProd.price === "number" ? apiProd.price : 45.0,
-        stock: typeof apiProd.stock === "number" ? apiProd.stock : 100,
-        rating: apiProd.rating || 4.8,
-        reviewsCount: apiProd.reviewsCount || 12,
-        image: apiProd.image || "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000",
-        description: apiProd.description || "Bespoke Aura Luxury product.",
-        features: apiProd.features || {
-          materials: "Premium organic ingredients and/or sustainable luxury composites.",
-          dimensions: "Standard retail packaging.",
-          shipping: "Complimentary premium shipping. Processed within 24 hours.",
-        },
-      } as Product));
+      return productsArray.map((apiProd: ApiProduct) => {
+        const catName =
+          typeof apiProd.category === "object" && apiProd.category !== null
+            ? apiProd.category.name
+            : typeof apiProd.category === "string"
+              ? apiProd.category
+              : "Wellness";
+
+        return {
+          id: apiProd.id,
+          name: apiProd.name,
+          slug: apiProd.slug || slugify(apiProd.name, { lower: true, strict: true }),
+          category: catName,
+          price: typeof apiProd.price === "number" ? apiProd.price : 45.0,
+          stock: typeof apiProd.stock === "number" ? apiProd.stock : 100,
+          rating: apiProd.rating || 4.8,
+          reviewsCount: apiProd.reviewsCount || 12,
+          image: apiProd.image || "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&q=80&w=1000",
+          description: apiProd.description || "Bespoke Aura Luxury product.",
+          features: apiProd.features || {
+            materials: "Premium organic ingredients and/or sustainable luxury composites.",
+            dimensions: "Standard retail packaging.",
+            shipping: "Complimentary premium shipping. Processed within 24 hours.",
+          },
+        } as Product;
+      });
     }
     return [];
   }, [apiProducts]);
+
+  const categories = useMemo(() => {
+    const set = new Set<string>(["All"]);
+    products.forEach((p) => {
+      if (p.category) set.add(p.category);
+    });
+    return Array.from(set);
+  }, [products]);
 
   const filteredProducts = products
     .filter((prod: Product) => {
@@ -138,8 +148,6 @@ export default function ProductsPage() {
       if (sortBy === "rating") return b.rating - a.rating;
       return 0;
     });
-
-  const categories = ["All", "Wellness", "Footwear", "Apparel"];
 
   const fontStyles = (
     <style jsx global>{`
@@ -190,7 +198,7 @@ export default function ProductsPage() {
     );
   }
 
-  if (error) {
+  if (error || products.length === 0) {
     return (
       <div className="relative min-h-screen bg-[#F1ECE1] text-[#1C1B18] overflow-x-hidden font-sans selection:bg-[#A9784F]/25">
         {fontStyles}
@@ -210,24 +218,19 @@ export default function ProductsPage() {
           </div>
         </section>
 
-        {/* ERROR STATE */}
-        <main className="py-24 sm:py-32 max-w-xl mx-auto px-4 text-center space-y-6">
-          <div className="inline-flex w-16 h-16 bg-[#A9784F]/10 text-[#A9784F] rounded-full items-center justify-center">
-            <SlidersHorizontal className="h-6 w-6" />
-          </div>
-          <h2 className="font-display text-3xl sm:text-4xl text-[#1C1B18]">
-            Catalog Unavailable
-          </h2>
-          <p className="text-sm text-[#1C1B18]/65 font-body font-light leading-relaxed">
-            We are currently unable to load the apothecary collection. Please
-            check your network connection or try again later.
-          </p>
-          <Button
-            onClick={() => window.location.reload()}
-            className="text-xs font-label uppercase tracking-widest bg-[#1C1B18] text-[#F1ECE1] px-8 py-5 rounded-none hover:bg-[#1C1B18]/85 font-semibold"
-          >
-            Retry Connection
-          </Button>
+        {/* EMPTY / ERROR STATE */}
+        <main className="py-24 sm:py-32 max-w-xl mx-auto px-4">
+          <EmptyState
+            title={error ? "Catalog Unavailable" : "No Products Found"}
+            description={
+              error
+                ? "We are currently unable to load the apothecary collection. Please check your network connection or try again later."
+                : "There are currently no items available in our apothecary collection."
+            }
+            icon={ShoppingBag}
+            actionLabel="Retry Connection"
+            onAction={() => window.location.reload()}
+          />
         </main>
 
         <Footer />
@@ -282,7 +285,7 @@ export default function ProductsPage() {
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-4 py-2 text-[11px] font-label uppercase tracking-wider font-semibold border transition-all duration-300 whitespace-nowrap ${
+                    className={`px-4 py-2 text-[11px] font-label uppercase tracking-wider font-semibold border transition-all duration-300 whitespace-nowrap cursor-pointer ${
                       selectedCategory === cat
                         ? "bg-[#1C1B18] border-[#1C1B18] text-[#F1ECE1]"
                         : "bg-white border-[#1C1B18]/15 text-[#1C1B18]/65 hover:border-[#A9784F]/50 hover:text-[#A9784F]"
@@ -315,15 +318,16 @@ export default function ProductsPage() {
       {/* PRODUCTS GRID */}
       <main className="py-20 sm:py-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-24 bg-white border border-[#1C1B18]/10 max-w-xl mx-auto">
-            <h3 className="font-display text-2xl text-[#1C1B18]/75 mb-3">
-              No products found
-            </h3>
-            <p className="text-sm text-[#1C1B18]/55 font-body font-light">
-              We couldn't find anything matching your search. Try a different
-              term or category.
-            </p>
-          </div>
+          <EmptyState
+            title="No Matching Products"
+            description="We couldn't find anything matching your search query or filter selection. Try clearing your filters."
+            icon={Search}
+            actionLabel="Reset Filters"
+            onAction={() => {
+              setSearchQuery("");
+              setSelectedCategory("All");
+            }}
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {filteredProducts.map((product: Product) => (

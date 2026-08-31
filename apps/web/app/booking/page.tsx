@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@repo/ui/button";
@@ -22,6 +22,12 @@ import {
   Clock,
   Lock
 } from "lucide-react";
+
+interface ApiService {
+  id: string;
+  name?: string;
+  price?: number;
+}
 
 interface Service {
   id: string;
@@ -46,11 +52,15 @@ const bookingNavLinks = [
 function BookingForm({
   user,
   services,
+  servicesLoading,
+  servicesError,
   setBookingName,
   bookingName
 }: {
   user: User | null;
   services: Service[];
+  servicesLoading: boolean;
+  servicesError: unknown;
   setBookingName: React.Dispatch<React.SetStateAction<string>>;
   bookingName: string;
 }) {
@@ -58,25 +68,20 @@ function BookingForm({
   const preselectedServiceId = searchParams?.get("service") || "";
 
   // Booking states
-  const [bookingService, setBookingService] = useState("Therapeutic Massage");
+  const [bookingService, setBookingService] = useState("");
   const [bookingDate, setBookingDate] = useState("");
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
 
-  // Initialize service based on query param
+  // Initialize service selection based on available services or preselected query param
   useEffect(() => {
-    if (preselectedServiceId) {
-      const match = services.find((s) => s.id === preselectedServiceId);
-      if (match) {
-        setBookingService(match.id);
-      } else if (preselectedServiceId === "s1" || preselectedServiceId === "Therapeutic Massage") {
-        setBookingService("Therapeutic Massage");
-      } else if (preselectedServiceId === "s4" || preselectedServiceId === "Rejuvenating Facial") {
-        setBookingService("Rejuvenating Facial");
-      } else if (preselectedServiceId === "s3" || preselectedServiceId === "Wellness Consultation") {
-        setBookingService("Wellness Consultation");
+    if (services.length > 0) {
+      if (preselectedServiceId && services.some((s) => s.id === preselectedServiceId)) {
+        setBookingService(preselectedServiceId);
+      } else if (!bookingService || !services.some((s) => s.id === bookingService)) {
+        setBookingService(services[0]?.id || "");
       }
     }
-  }, [preselectedServiceId, services]);
+  }, [preselectedServiceId, services, bookingService]);
 
   const handleBookingSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -85,12 +90,9 @@ function BookingForm({
       return;
     }
 
-    let targetServiceId = bookingService;
-    if (!targetServiceId.startsWith("s")) {
-      if (bookingService === "Therapeutic Massage") targetServiceId = "s1";
-      else if (bookingService === "Rejuvenating Facial") targetServiceId = "s4";
-      else if (bookingService === "Wellness Consultation") targetServiceId = "s3";
-      else targetServiceId = "s1";
+    if (!bookingService) {
+      alert("Please select a service for your reservation.");
+      return;
     }
 
     try {
@@ -98,8 +100,8 @@ function BookingForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          serviceId: targetServiceId,
-          staffId: "staff1", // Default Elena Rostova
+          serviceId: bookingService,
+          staffId: "staff1", // Default staff identifier
           dateTime: new Date(bookingDate).toISOString(),
         }),
         credentials: "include",
@@ -185,21 +187,20 @@ function BookingForm({
                   <select
                     id="bookingService"
                     value={bookingService}
+                    disabled={servicesLoading || services.length === 0}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setBookingService(e.target.value)}
-                    className="flex h-11 w-full rounded-lg border border-brand-border bg-white pl-11 pr-4 py-2.5 text-xs sm:text-sm text-brand-charcoal/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary/50 shadow-inner appearance-none cursor-pointer font-sans"
+                    className="flex h-11 w-full rounded-lg border border-brand-border bg-white pl-11 pr-4 py-2.5 text-xs sm:text-sm text-brand-charcoal/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary/50 shadow-inner appearance-none cursor-pointer font-sans disabled:opacity-50"
                   >
-                    {services.length > 0 ? (
+                    {servicesLoading ? (
+                      <option value="">Loading available rituals...</option>
+                    ) : servicesError || services.length === 0 ? (
+                      <option value="">No services available for booking</option>
+                    ) : (
                       services.map((svc) => (
                         <option key={svc.id} value={svc.id}>
-                          {svc.name} (${svc.price})
+                          {svc.name} (Ksh {svc.price})
                         </option>
                       ))
-                    ) : (
-                      <>
-                        <option value="Therapeutic Massage">Therapeutic Massage ($120)</option>
-                        <option value="Rejuvenating Facial">Rejuvenating Facial ($145)</option>
-                        <option value="Wellness Consultation">Wellness Consultation ($95)</option>
-                      </>
                     )}
                   </select>
                 </div>
@@ -225,7 +226,8 @@ function BookingForm({
 
             <Button
               type="submit"
-              className="w-full text-xs uppercase tracking-[0.2em] bg-brand-primary hover:bg-brand-primary-hover text-white py-5 rounded-lg mt-3 shadow-md font-semibold cursor-pointer"
+              disabled={servicesLoading || services.length === 0}
+              className="w-full text-xs uppercase tracking-[0.2em] bg-brand-primary hover:bg-brand-primary-hover text-white py-5 rounded-lg mt-3 shadow-md font-semibold cursor-pointer disabled:opacity-50"
             >
               Confirm Reservation
             </Button>
@@ -281,11 +283,25 @@ export default function BookingPage() {
   const user = sessionData?.user || null;
 
   // Services with SWR
-  const { data: apiServices } = useSWR(
-    API_ENDPOINTS.services(),
-    defaultFetcher
-  );
-  const services = apiServices || [];
+  const {
+    data: apiServicesData,
+    isLoading: servicesLoading,
+    error: servicesError,
+  } = useSWR(API_ENDPOINTS.services(), defaultFetcher);
+
+  const services = useMemo<Service[]>(() => {
+    const servicesArray = Array.isArray(apiServicesData?.data)
+      ? apiServicesData.data
+      : Array.isArray(apiServicesData)
+        ? apiServicesData
+        : [];
+
+    return servicesArray.map((svc: ApiService) => ({
+      id: svc.id,
+      name: svc.name || "Bespoke Ritual",
+      price: typeof svc.price === "number" ? svc.price : 120,
+    }));
+  }, [apiServicesData]);
 
   useEffect(() => {
     if (user) {
@@ -347,6 +363,8 @@ export default function BookingPage() {
               <BookingForm
                 user={user}
                 services={services}
+                servicesLoading={servicesLoading}
+                servicesError={servicesError}
                 setBookingName={setBookingName}
                 bookingName={bookingName}
               />
